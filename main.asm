@@ -23,7 +23,7 @@ sub_0:                                  ; DATA XREF: ROM:0303↓w
                 ld      hl, 0
                 ld      sp, hl
                 exx
-                jr      loc_30
+                jr      CHECK_KEYBOARD_ON_RESET
 
 
 ; RST 8
@@ -38,34 +38,29 @@ PRINT:                                  ; CODE XREF: PRINT+3↓j
 
 ; RST 10
                 ORG #0010
-
-PRINT_CHAR_A:                           ; CODE XREF: PRINT+1↑p
-                                        ; sub_18+2↓j ...
+PRINT_CHAR_A:
                 jp      _PRINT_CHAR
 
                 out     (PORT_00), a
                 jr      loc_4C
 
+; RST 18
                 ORG #0018
-
-sub_18:                                 ; CODE XREF: ROM:05C0↓p
-                                        ; sub_605+9F↓p ...
                 ld      a, 20h ; ' '
                 jr      PRINT_CHAR_A
 
+; RST 20
                 ORG #0020
-
-sub_20:                                 ; CODE XREF: sub_20+6↓j
-                                        ; ROM:01B8↓p
+LOOP_FOREVER:
                 ld      (hl), b
                 ld      a, (hl)
                 ld      (hl), a
                 xor     a
                 out     (0FEh), a
-                jr      sub_20
+                jr      LOOP_FOREVER
 
-sub_28:                                 ; CODE XREF: sub_605+F6↓p
-                                        ; sub_605+F9↓p ...
+; RST 28
+                ORG #0028
                 jp      PRINT_HEX_NUMBER
 
 ; Unreferenced
@@ -73,26 +68,24 @@ sub_28:                                 ; CODE XREF: sub_605+F6↓p
                 jr      loc_6D
                 db 0DAh     ; ?????
 
-loc_30:
-                ld      a, 7Eh ; '~'
-                in      a, (0FEh)
-                rra
-                jr      loc_73
-; ---------------------------------------------------------------------------
-                rst     38h
+CHECK_KEYBOARD_ON_RESET:
+                ld      a, #7E ; #7E selects two bottom half-rows
+                in      a, (#FE)
+                rra     ; C = bit 0 (either CAPS SHIFT or SPACE)
+                jr      _CHECK_48_128_FAST_RESET
+
+; RST 38
+                ORG #0038
                 ret
+
                 dw 0AA55h
-byte_3B:        db 0FFh, 0, 80h, 0FFh, 0FFh
+byte_3B:        db 0FFh
+                db 0, 80h, 0FFh, 0FFh
                                         ; DATA XREF: ROM:0165↓o
-; ---------------------------------------------------------------------------
                 jp      loc_2EB
-; ---------------------------------------------------------------------------
                 jp      sub_41F
-; ---------------------------------------------------------------------------
                 jp      loc_3F5
-; ---------------------------------------------------------------------------
-                jp      attempt_to_boot
-; ---------------------------------------------------------------------------
+                jp      ATTEMPT_TO_BOOT
 
 loc_4C:                                 ; CODE XREF: ROM:0015↑j
                 or      20h ; ' '
@@ -107,23 +100,22 @@ _chunk1:
                 ret
 ; END OF FUNCTION CHUNK FOR PATCH_ROM
 ; ---------------------------------------------------------------------------
-                call    attempt_to_boot
-                jp      COPY_IMG_TO_RAM
+                call    ATTEMPT_TO_BOOT
+                jp      RUN_BASIC_48_MENU
 ; ---------------------------------------------------------------------------
                 db 0FFh, 0FFh, 0, 5Dh, 0D9h, 0CAh, 0F3h, 18h, 0F1h
 ; ---------------------------------------------------------------------------
 
-loc_62:                                 ; CODE XREF: ROM:0064↓j
-                                        ; ROM:010F↓j
+loc_62:
                 out     (PORT_00), a
                 jr      loc_62
-; ---------------------------------------------------------------------------
+
+; NMI
+                ORG #0066
                 push    af
                 push    bc
                 push    de
                 push    hl
-
-loc_6A:
                 jp      loc_A7
 ; ---------------------------------------------------------------------------
 
@@ -137,64 +129,48 @@ loc_6F:                                 ; CODE XREF: ROM:loc_A5↓j
                 ret
 ; ---------------------------------------------------------------------------
 
-loc_73:                                 ; CODE XREF: ROM:0035↑j
-                ex      af, af'
+_CHECK_48_128_FAST_RESET:
+                ex      af, af' ; store our C flag during pause
                 ld      bc, 4000h
-
-loc_77:                                 ; CODE XREF: ROM:007A↓j
+_pause_4000h:
                 dec     bc
                 ld      a, c
                 or      b
-                jr      nz, loc_77
-                ex      af, af'
-                jr      nc, loc_97
-                rra
-                jp      c, loc_12E
+                jr      nz, _pause_4000h
+                ex      af, af' ; restore our C flag with CAPS/SPACE status
+                jr      nc, FAST_RESET_48
+                rra ; C = bit 1 of #7EFE, either SYMB SHIFT or Z
+                jp      c, NORMAL_RESET
 
-RUN_BASIC128:                           ; CODE XREF: ROM:01FA↓j
+RUN_BASIC_128:                           ; CODE XREF: ROM:01FA↓j
                 xor     a
                 ld      bc, 7FFDh
                 out     (c), a
                 ld      (#FFFF), a
-                ld      a, 0A8h
-                ld      hl, 0D3h
+                ld      a, #A8
+                ld      hl, #D3
                 ld      (#FFFD), hl
-
-loc_94:                                 ; out (PORT_00), A8 + JP 00
-                jp      #FFFD
+                jp      #FFFD ; out (PORT_00), A8 + JP 00
 ; ---------------------------------------------------------------------------
 
-loc_97:                                 ; CODE XREF: ROM:007D↑j
-                                        ; ROM:00AF↓j
+FAST_RESET_48:
                 ld      a, 17h
-
-loc_99:
                 ld      bc, 7FFDh
                 out     (c), a
-
-loc_9E:
                 ld      hl, 0
                 push    hl
-
-loc_A2:
                 ld      a, 0E0h
                 push    af
-
-loc_A5:
                 jr      loc_6F
 ; ---------------------------------------------------------------------------
 
-loc_A7:                                 ; CODE XREF: ROM:loc_6A↑j
-                ld      a, 7Eh ; '~'
-
-loc_A9:
+loc_A7:
+                ld      a, #7E      ; two bottom rows
                 in      a, (0FEh)
-                rra
-
-loc_AC:
+                rra     ; check CAPS/SPACE
                 jr      nc, loc_116
-                rra
-                jr      nc, loc_97
+                rra     ; check SYMB SHIFT/Z
+                jr      nc, FAST_RESET_48
                 ld      a, (#F000)
                 ld      e, a
                 ld      a, r
@@ -225,8 +201,6 @@ loc_D4:                                 ; CODE XREF: ROM:loc_CC↑j
                 ld      a, 40h ; '@'
                 out     (c), a
                 ld      a, (#C066)
-
-UNK_BLOB2:
                 cp      0C3h
                 jr      nz, loc_F2
                 ld      a, l
@@ -286,11 +260,11 @@ loc_116:                                ; CODE XREF: ROM:loc_AC↑j
                 jp      loc_219
 ; ---------------------------------------------------------------------------
 
-loc_12E:                                ; CODE XREF: ROM:0080↑j
-                ld      a, 0F7h
+NORMAL_RESET:
+                ld      a, 0F7h     ; extended keyboard half-row ESC, F5, DEL, /, 8, -
                 in      a, (7Eh)
-                rrca
-                jp      nc, COPY_IMG_TO_RAM
+                rrca                ; C = ESC
+                jp      nc, RUN_BASIC_48_MENU
                 xor     a
                 out     (0FEh), a
                 ld      hl, 4000h
@@ -317,13 +291,11 @@ bad_crc_warn:                           ; CODE XREF: ROM:0160↓j
                 xor     12h
                 out     (0FEh), a
                 ld      b, d
-
-loc_15D:                                ; CODE XREF: ROM:loc_15D↓j
                 djnz    $
                 dec     e
                 jr      nz, bad_crc_warn
 
-crc_ok:                                 ; CODE XREF: ROM:0152↑j
+crc_ok:
                 xor     a
                 out     (0FEh), a
                 ld      de, byte_3B
@@ -336,22 +308,21 @@ loc_168:                                ; CODE XREF: ROM:0187↓j
                 ld      bc, 40h ; '@'
                 ld      ix, 4000h
 
-cls_loop:                               ; CODE XREF: ROM:0181↓j
-                                        ; ROM:0184↓j
+FAST_RAM_TEST:
                 ld      (ix+0), h
                 ld      l, (ix+0)
                 ld      a, h
                 cp      l
-                jr      nz, loc_189
+                jr      nz, ON_RAM_BAD
                 inc     ix
-                djnz    cls_loop
+                djnz    FAST_RAM_TEST
                 dec     c
-                jr      nz, cls_loop
+                jr      nz, FAST_RAM_TEST
                 inc     de
                 jr      loc_168
 ; ---------------------------------------------------------------------------
 
-loc_189:                                ; CODE XREF: ROM:017D↑j
+ON_RAM_BAD:
                 ex      af, af'
                 ld      a, l
                 ld      hl, 5800h
@@ -385,11 +356,10 @@ loc_1A7:                                ; CODE XREF: ROM:01A3↑j
                 ld      b, a
                 rst     20h
 
-RUN_BOOT_DOS_AND_REDRAW:                ; CODE XREF: ROM:016B↑j
-                                        ; ROM:0201↓j
+RUN_BOOT_DOS_AND_REDRAW:
                 ld      a, 7
                 out     (0FEh), a
-                call    attempt_to_boot
+                call    ATTEMPT_TO_BOOT
 
                 xor     a
                 out     (0FEh), a
@@ -399,52 +369,49 @@ RUN_BOOT_DOS_AND_REDRAW:                ; CODE XREF: ROM:016B↑j
                 ld      (hl), 7
                 ldir
                 call    DRAW_MENU
+
                 ld      c, 0
-
-loop_kbd1:                              ; CODE XREF: ROM:01E7↓j
+READ_MENU_KEYBORD:
                 ld      b, 0
-
-loop_kbd2:                              ; CODE XREF: ROM:01E1↓j
-                ld      a, 0F7h
+_loop_kbd:
+                ld      a, 0F7h     ; 12345 half-row
                 in      a, (0FEh)
                 cpl
                 and     0Fh
                 cp      c
-                jr      nz, loc_1E6
-                djnz    loop_kbd2
+                jr      nz, loc_1E6 ; stabilize reading
+                djnz    _loop_kbd
                 or      a
-                jr      nz, loc_1E9
+                jr      nz, ON_KEYPRESS
 
-loc_1E6:                                ; CODE XREF: ROM:01DF↑j
+loc_1E6:
                 ld      c, a
-                jr      loop_kbd1
-; ---------------------------------------------------------------------------
+                jr      READ_MENU_KEYBORD
 
-loc_1E9:                                ; CODE XREF: ROM:01E4↑j
+; ---------------------------------------------------------------------------
+ON_KEYPRESS:
                 ex      af, af'
                 xor     a
                 ld      de, 8080h
-
-loc_1EE:                                ; CODE XREF: ROM:01F6↓j
-                xor     10h
+_play_click:
+                xor     10h             ; generate square waveform
                 out     (0FEh), a       ; black border + click
                 ld      b, d
-
-loc_1F3:                                ; CODE XREF: ROM:loc_1F3↓j
-                djnz    $
+                djnz    $               ; pause a little
                 dec     e
-                jr      nz, loc_1EE
+                jr      nz, _play_click
+
                 ex      af, af'
                 rrca
-                jp      c, RUN_BASIC128
+                jp      c, RUN_BASIC_128
                 rrca
-                jr      c, COPY_IMG_TO_RAM
+                jr      c, RUN_BASIC_48_MENU
                 rrca
                 jr      c, RUN_BOOT_DOS_AND_REDRAW
                 jp      RUN_TEST_MEM
-; ---------------------------------------------------------------------------
+; END OF FUNCTION ON_KEYPRESS
 
-COPY_IMG_TO_RAM:                        ; CODE XREF: ROM:0056↑j
+RUN_BASIC_48_MENU:                        ; CODE XREF: ROM:0056↑j
                                         ; ROM:0133↑j ...
                 xor     a
                 ld      bc, 7FFDh
@@ -812,7 +779,7 @@ INIT_FDD_CONTROLLER_AND_EXIT:
                 out     (PORT_85), a
                 ret
 
-attempt_to_boot:
+ATTEMPT_TO_BOOT:
                 ld      hl, 8800h
                 xor     a ; NO DRIVE SELECTED AND NO MOTOR
                 out     (PORT_85), a
@@ -880,7 +847,7 @@ _LOAD_SECTOR:
 ; End of function _LOAD_SECTOR
 
 ; ---------------------------------------------------------------------------
-; START OF FUNCTION CHUNK FOR attempt_to_boot
+; START OF FUNCTION CHUNK FOR ATTEMPT_TO_BOOT
 
 RUN_DISK:
                 ld      a, e
@@ -912,13 +879,13 @@ START_TRDOS:
                 jp      OUT_0_A_JP_3D2F
 ; ---------------------------------------------------------------------------
 
-START_CPM:                                ; CODE XREF: attempt_to_boot+6D↑j
+START_CPM:                                ; CODE XREF: ATTEMPT_TO_BOOT+6D↑j
                 ld      bc, 7FFDh
                 ld      a, 1Fh
                 out     (c), a
                 ld      e, 21h
                 jp      (hl)
-; END OF FUNCTION CHUNK FOR attempt_to_boot
+; END OF FUNCTION CHUNK FOR ATTEMPT_TO_BOOT
 
 READ_VG93_DATA:
                 in      a, (PORT_80)
