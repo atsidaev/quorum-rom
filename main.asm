@@ -6,28 +6,28 @@
                 DB 0xFF
                 EDUP
 
-                ORG 0
-
 SCREEN_4000     EQU #4000
 OUT_0_A_JP_3D2F EQU #5D15
 TEST_RAM        EQU #5D1A
 TEST_ROM        EQU #5D02
 
+                INCLUDE "quorum_ports.inc"
+
 MENU_BEGIN_SCREEN_ADDR  EQU #4808
 VER_BEGIN_SCREEN_ADDR   EQU #50E0
 
+; RST 0
+                ORG 0
 sub_0:                                  ; DATA XREF: ROM:0303↓w
                 di
                 ld      hl, 0
                 ld      sp, hl
                 exx
                 jr      loc_30
-; End of function sub_0
 
 
-; =============== S U B R O U T I N E =======================================
-
-
+; RST 8
+                ORG #0008
 PRINT:                                  ; CODE XREF: PRINT+3↓j
                                         ; DRAW_MENU+16↓p ...
                 ld      a, (de)
@@ -35,15 +35,15 @@ PRINT:                                  ; CODE XREF: PRINT+3↓j
                 inc     de
                 djnz    PRINT
                 ret
-; End of function PRINT
 
+; RST 10
                 ORG #0010
 
 PRINT_CHAR_A:                           ; CODE XREF: PRINT+1↑p
                                         ; sub_18+2↓j ...
                 jp      _PRINT_CHAR
 
-                out     (0), a
+                out     (PORT_00), a
                 jr      loc_4C
 
                 ORG #0018
@@ -66,14 +66,14 @@ sub_20:                                 ; CODE XREF: sub_20+6↓j
 
 sub_28:                                 ; CODE XREF: sub_605+F6↓p
                                         ; sub_605+F9↓p ...
-                jp      loc_799
+                jp      PRINT_HEX_NUMBER
 
 ; Unreferenced
-                out     (0), a
+                out     (PORT_00), a
                 jr      loc_6D
                 db 0DAh     ; ?????
 
-loc_30:                                 ; CODE XREF: sub_0+6↑j
+loc_30:
                 ld      a, 7Eh ; '~'
                 in      a, (0FEh)
                 rra
@@ -99,7 +99,7 @@ loc_4C:                                 ; CODE XREF: ROM:0015↑j
 ; START OF FUNCTION CHUNK FOR PATCH_ROM
 
 loc_4E:                                 ; CODE XREF: PATCH_ROM+62↓j
-                out     (0), a
+                out     (PORT_00), a
                 pop     af
 
 _chunk1:
@@ -115,7 +115,7 @@ _chunk1:
 
 loc_62:                                 ; CODE XREF: ROM:0064↓j
                                         ; ROM:010F↓j
-                out     (0), a
+                out     (PORT_00), a
                 jr      loc_62
 ; ---------------------------------------------------------------------------
                 push    af
@@ -132,7 +132,7 @@ loc_6D:                                 ; CODE XREF: ROM:002D↑j
 
 loc_6F:                                 ; CODE XREF: ROM:loc_A5↓j
                                         ; PATCH_ROM:loc_3EF↓j
-                out     (0), a
+                out     (PORT_00), a
                 pop     af
                 ret
 ; ---------------------------------------------------------------------------
@@ -160,7 +160,7 @@ RUN_BASIC128:                           ; CODE XREF: ROM:01FA↓j
                 ld      hl, 0D3h
                 ld      (#FFFD), hl
 
-loc_94:                                 ; out (0), A8 + JP 00
+loc_94:                                 ; out (PORT_00), A8 + JP 00
                 jp      #FFFD
 ; ---------------------------------------------------------------------------
 
@@ -390,6 +390,7 @@ RUN_BOOT_DOS_AND_REDRAW:                ; CODE XREF: ROM:016B↑j
                 ld      a, 7
                 out     (0FEh), a
                 call    attempt_to_boot
+
                 xor     a
                 out     (0FEh), a
                 ld      hl, 5800h
@@ -527,7 +528,7 @@ loc_2EE:                                ; CODE XREF: ROM:02F1↓j
                 ld      a, 10h
                 out     (c), a
                 xor     a
-                out     (0), a
+                out     (PORT_00), a
                 ld      hl, 0C000h
                 ld      e, (hl)
                 dec     a
@@ -546,7 +547,7 @@ loc_2EE:                                ; CODE XREF: ROM:02F1↓j
                 ld      a, (#C026)
                 cp      54h ; 'T'
                 jr      z, loc_326
-                jp      SWITC_TO_48
+                jp      SWITCH_TO_48
 ; ---------------------------------------------------------------------------
 
 loc_326:                                ; CODE XREF: ROM:0315↑j
@@ -559,13 +560,13 @@ loc_326:                                ; CODE XREF: ROM:0315↑j
                 jp      #C003
 ; ---------------------------------------------------------------------------
                 ld      a, 20h ; ' '
-                out     (0), a
+                out     (PORT_00), a
                 ld      hl, 28h ; '('
                 ld      de, 0C028h
                 ld      bc, 3FD8h
                 ldir
                 xor     a
-                out     (0), a
+                out     (PORT_00), a
                 jp      loc_34B
 ; ---------------------------------------------------------------------------
 
@@ -614,7 +615,7 @@ loc_389:                                ; CODE XREF: ROM:035B↑j
                                         ; ROM:037D↑j
                 ld      a, (#C026)
                 cp      54h ; 'T'
-                jr      nz, SWITC_TO_48
+                jr      nz, SWITCH_TO_48
 
 ; =============== S U B R O U T I N E =======================================
 
@@ -628,7 +629,7 @@ PATCH_ROM:
 _PATCH_TURBO_LOOP:                      ; CODE XREF: PATCH_ROM+D↓j
                 ld      a, (hl)         ; amount of bytes to patch
                 or      a
-                jr      z, SWITC_TO_48
+                jr      z, SWITCH_TO_48
                 inc     hl
                 ld      e, (hl)         ; DE will be address to patch
                 inc     hl
@@ -638,7 +639,7 @@ _PATCH_TURBO_LOOP:                      ; CODE XREF: PATCH_ROM+D↓j
                 jr      _PATCH_TURBO_LOOP ; repeat while patch data exists
 ; ---------------------------------------------------------------------------
 
-SWITC_TO_48:                            ; CODE XREF: ROM:0323↑j
+SWITCH_TO_48:                            ; CODE XREF: ROM:0323↑j
                                         ; ROM:038E↑j ...
                 ld      bc, 7FFDh
                 ld      a, 17h
@@ -806,619 +807,176 @@ loc_44F:                                ; CODE XREF: sub_41F+34↓j
                 jr      loc_420
 ; End of function sub_41F
 
-; ---------------------------------------------------------------------------
-; START OF FUNCTION CHUNK FOR attempt_to_boot
-
-loc_45B:                                ; CODE XREF: attempt_to_boot+A↓j
-                                        ; attempt_to_boot+16↓j ...
-                xor     a
-                out     (85h), a
+INIT_FDD_CONTROLLER_AND_EXIT:
+                xor     a ; NO DRIVE SELECTED AND NO MOTOR
+                out     (PORT_85), a
                 ret
-; END OF FUNCTION CHUNK FOR attempt_to_boot
 
-; =============== S U B R O U T I N E =======================================
-
-
-attempt_to_boot:                        ; CODE XREF: ROM:0049↑j
-                                        ; ROM:0053↑p ...
-
-; FUNCTION CHUNK AT 045B SIZE 00000004 BYTES
-; FUNCTION CHUNK AT 04C1 SIZE 00000036 BYTES
-
+attempt_to_boot:
                 ld      hl, 8800h
-                xor     a
-                out     (85h), a
-                in      a, (80h)
-                bit     7, a
-                jr      z, loc_45B
-                ld      a, 21h ; '!'
-                out     (85h), a
+                xor     a ; NO DRIVE SELECTED AND NO MOTOR
+                out     (PORT_85), a
+                in      a, (PORT_80)
+                bit     7, a ; NOT READY?
+                jr      z, INIT_FDD_CONTROLLER_AND_EXIT
+                ld      a, FDD_DRIVE1 | FDD_MOTOR_ON
+                out     (PORT_85), a
                 call    pause_256
-                in      a, (80h)
-                rla
-                jr      c, loc_45B
-                call    sub_507
-                xor     a
-                call    sub_509
+                in      a, (PORT_80)
+                rla     ; C = NOT READY
+                jr      c, INIT_FDD_CONTROLLER_AND_EXIT
+                call    TERMINATE_VG93
+                xor     a ; 0 - RESTORE CMD
+                call    RUN_VG93_COMMAND
                 ld      de, 0
-                in      a, (80h)
-                and     2
+                in      a, (PORT_80)
+                and     2 ; bit 2 is INDEX
                 ld      c, a
 
-loc_486:                                ; CODE XREF: attempt_to_boot+31↓j
-                in      a, (80h)
-                and     2
-                cp      c
-                jr      nz, loc_494
+; Check if disk present
+
+_WAIT_INDEX_CHANGE:
+                in      a, (PORT_80)
+                and     2 ; bit 2 is INDEX
+                cp      c ; INDEX changed?
+                jr      nz, _TRY_LOAD_SECTOR_1
                 dec     de
                 ld      a, d
                 or      e
-                jr      nz, loc_486
-                jr      loc_45B
+                jr      nz, _WAIT_INDEX_CHANGE
+                jr      INIT_FDD_CONTROLLER_AND_EXIT
 ; ---------------------------------------------------------------------------
 
-loc_494:                                ; CODE XREF: attempt_to_boot+2C↑j
-                ld      e, 1
+_TRY_LOAD_SECTOR_1:
+                ld      e, 1 ; Sector #1
 
-loc_496:                                ; CODE XREF: attempt_to_boot+71↓j
-                ld      b, 3
+_TRY_LOAD_SECTOR:
+                ld      b, 3 ; 3 attempts to boot
 
-loc_498:                                ; CODE XREF: attempt_to_boot+41↓j
+_TRY_LOAD_SECTOR_LOOP:
                 ld      a, e
                 push    hl
-                call    sub_4A4
+                call    _LOAD_SECTOR
                 pop     hl
-                jr      z, loc_4C1
-                djnz    loc_498
-                jr      loc_45B
-; End of function attempt_to_boot
+                jr      z, RUN_DISK ; if no errors reported, run disk
+                djnz    _TRY_LOAD_SECTOR_LOOP
+                jr      INIT_FDD_CONTROLLER_AND_EXIT
 
-
-; =============== S U B R O U T I N E =======================================
-
-
-sub_4A4:                                ; CODE XREF: attempt_to_boot+3B↑p
-                out     (82h), a
-                call    sub_507
-                ld      a, 0Bh
-                call    sub_509
-                ld      a, 80h
-                out     (80h), a
+_LOAD_SECTOR:
+                out     (PORT_82), a
+                call    TERMINATE_VG93
+                ld      a, #0B ; RESTORE, no VERIFY
+                call    RUN_VG93_COMMAND
+                ld      a, #80 ; READ SECTOR command
+                out     (PORT_80), a
                 call    pause_256
-                ld      c, 83h
+                ld      c, PORT_83
                 push    hl
-                call    sub_4F7
+                call    READ_VG93_DATA
                 pop     hl
-                in      a, (80h)
-                and     1Dh
+                in      a, (PORT_80)
+                and     #1D ; keep errors only
                 ret
-; End of function sub_4A4
+; End of function _LOAD_SECTOR
 
 ; ---------------------------------------------------------------------------
 ; START OF FUNCTION CHUNK FOR attempt_to_boot
 
-loc_4C1:                                ; CODE XREF: attempt_to_boot+3F↑j
+RUN_DISK:
                 ld      a, e
                 dec     a
-                jr      nz, loc_4D2
-                ld      de, 20h ; ' '
-                add     hl, de
+                jr      nz, START_TRDOS ; if sector != 1, then boot via TR-DOS
+                ld      de, #20 ; CP/M boot is in sector 1, starting from byte 20
+                add     hl, de ; HL=8820, boot sector was loaded there
                 ld      a, (hl)
-                cp      0C3h
-                jr      z, loc_4ED
-                ld      e, 9
-                jr      loc_496
+                cp      #C3 ; double checking that this is JP instruction
+                jr      z, START_CPM
+                ; if not JP, then this might be TR-DOS disk
+                ld      e, 9 ; Load sector #9
+                jr      _TRY_LOAD_SECTOR
 ; ---------------------------------------------------------------------------
 
-loc_4D2:                                ; CODE XREF: attempt_to_boot+64↑j
+START_TRDOS:
                 xor     a
-                out     (85h), a
+                out     (PORT_85), a
                 ld      bc, 7FFDh
                 ld      a, 17h
                 out     (c), a
-                ld      hl, 527h
-                ld      de, OUT_0_A_JP_3D2F ; PREPARE HELPER IN RAM
-                ld      bc, 5
+                ; PREPARE HELPER IN RAM (we cannot switch ROM to TR-DOS from QUORUM ROM directly)
+                ld      hl, OUT_0_A_JP_3D2F_PROC_BODY
+                ld      de, OUT_0_A_JP_3D2F
+                ld      bc, OUT_0_A_JP_3D2F_PROC_BODY_END - OUT_0_A_JP_3D2F_PROC_BODY
                 ldir
                 push    bc
                 ld      a, 0E0h
                 jp      OUT_0_A_JP_3D2F
 ; ---------------------------------------------------------------------------
 
-loc_4ED:                                ; CODE XREF: attempt_to_boot+6D↑j
+START_CPM:                                ; CODE XREF: attempt_to_boot+6D↑j
                 ld      bc, 7FFDh
                 ld      a, 1Fh
                 out     (c), a
-                ld      e, 21h ; '!'
+                ld      e, 21h
                 jp      (hl)
 ; END OF FUNCTION CHUNK FOR attempt_to_boot
 
-; =============== S U B R O U T I N E =======================================
+READ_VG93_DATA:
+                in      a, (PORT_80)
+                rrca    ; is BUSY (bit0)?
+                ret     nc ; return if not busy
+                rrca    ; DRQ (data request)?
+                jr      nc, READ_VG93_DATA ; repeat if not DRQ
+                ini     ; read port C into (HL++)
+                jr      READ_VG93_DATA
+; End of function READ_VG93_DATA
 
 
-sub_4F7:                                ; CODE XREF: sub_4A4+14↑p
-                                        ; sub_4F7+5↓j ...
-                in      a, (80h)
-                rrca
-                ret     nc
-                rrca
-                jr      nc, sub_4F7
-                ini
-                jr      sub_4F7
-; End of function sub_4F7
-
-
-; =============== S U B R O U T I N E =======================================
-
-
-pause_256:                              ; CODE XREF: attempt_to_boot+10↑p
-                                        ; sub_4A4+E↑p ...
+pause_256:
                 xor     a
 
-loc_503:                                ; CODE XREF: pause_256+3↓j
+_pause_256_loop:
                 dec     a
                 ret     z
-                jr      loc_503
+                jr      _pause_256_loop
 ; End of function pause_256
 
 
-; =============== S U B R O U T I N E =======================================
-
-
-sub_507:                                ; CODE XREF: attempt_to_boot+18↑p
-                                        ; sub_4A4+2↑p
-                ld      a, 0D8h
-; End of function sub_507
-
-
-; =============== S U B R O U T I N E =======================================
-
-
-sub_509:                                ; CODE XREF: attempt_to_boot+1C↑p
-                                        ; sub_4A4+7↑p
-                out     (80h), a
+TERMINATE_VG93:
+                ld      a, #D8 ; TERMINATE immediately
+RUN_VG93_COMMAND:
+                out     (PORT_80), a
                 call    pause_256
 
-loc_50E:                                ; CODE XREF: sub_509+8↓j
-                in      a, (80h)
+READ_VG93_STATUS:
+                in      a, (PORT_80)
                 rrca
-                jr      c, loc_50E
+                jr      c, READ_VG93_STATUS
                 ret
-; End of function sub_509
 
-; ---------------------------------------------------------------------------
+; Memory Test (Menu Option 4)
 
-TEST_ROM_PROC_BODY:                     ; DATA XREF: ROM:0539↓o
-                out     (0), a
+                INCLUDE "memtest_proc.asm"
+RUN_TEST_MEM:
+                INCLUDE "memtest.asm"
 
-loc_516:                                ; CODE XREF: ROM:0521↓j
-                ld      a, (hl)
-                add     a, e
-                ld      e, a
-                ld      a, 0
-                adc     a, d
-                ld      d, a
-                inc     hl
-                ld      a, 40h ; '@'
-                cp      h
-                jr      nz, loc_516
-                xor     a
-                out     (0), a
-                ret
-; ---------------------------------------------------------------------------
+; Common functions for text output
 
-OUT_0_A_JP_3D2F_PROC_BODY:              ; DATA XREF: ROM:0544↓o
-                out     (0), a
-                jp      #3D2F           ; TR-DOS
-; ---------------------------------------------------------------------------
-
-RUN_TEST_MEM:                           ; CODE XREF: ROM:0203↑j
-                ld      a, 7
-                out     (0FEh), a
-                ld      (#5CFF), a
-                ld      hl, 0
-                ld      (#5D00), hl
-                ld      hl, TEST_ROM_PROC_BODY
-                ld      de, TEST_ROM
-                ld      bc, 13h
-                ldir
-                ld      hl, OUT_0_A_JP_3D2F_PROC_BODY ; PREPARE TR-DOS JUMPER IN RAM
-                ld      de, OUT_0_A_JP_3D2F
-                ld      bc, 5
-                ldir
-
-loc_54F:                                ; CODE XREF: sub_605+E8↓j
-                ld      sp, 6000h
-                ld      a, 10h
-                ld      bc, 7FFDh
-                out     (c), a
-                ld      hl, 4000h       ; cls
-                ld      de, 4001h
-                ld      bc, 17FFh
-                ld      (hl), 0
-                ldir
-                inc     hl              ; cls attr
-                inc     de
-                ld      (hl), 38h ; '8'
-                ld      bc, 2FFh
-                ldir
-                ld      hl, 4000h
-                ld      de, aRomMenuQuorumV ; "ROM-MENU QUORUM V.4.2 27.06.1997"
-                ld      b, 20h ; ' '
-                rst     8
-                ld      hl, 50E4h
-                ld      de, aPressResForBre ; "Press <RES> for break"
-                ld      b, 15h
-                rst     8
-                ld      hl, 50C5h
-                ld      de, aTestRomRamN ; "Test ROM/RAM N "
-                ld      b, 0Fh
-                rst     8
-                ld      de, (#5D00)
-                inc     de
-
-loc_58F:
-                ld      (#5D00), de
-                call    sub_796
-
-loc_596:
-                ld      hl, 4040h
-                ld      de, aRom64Kbyte ; "ROM  64 Kbyte"
-                ld      b, 0Dh
-                rst     8
-                ld      ix, 5Bh ; '['
-                xor     a
-
-loc_5A4:                                ; CODE XREF: sub_605+4C↓j
-                ld      hl, 4064h
-                push    af
-                push    af
-                push    af
-                sla     a
-                sla     a
-                sla     a
-                sla     a
-                sla     a
-                add     a, l
-                ld      l, a
-                ld      de, aPageN      ; "Page N "
-                ld      b, 7
-                rst     8
-                pop     af
-                add     a, 30h ; '0'
-                rst     10h
-                rst     18h
-                pop     af
-                push    hl
-                or      a
-                jr      z, loc_611
-                dec     a
-                jr      nz, loc_601
-                in      a, (80h)
-                cp      0FFh
-                jr      z, loc_5F8
-                ld      hl, 5E9h
-                push    hl
-                ld      hl, 5D11h
-                push    hl
-                ld      hl, 180Dh
-                push    hl
-                ld      hl, 0
-                ld      de, 0C000h
-                ld      bc, 4000h
-                ld      a, 0A0h         ; BASIC + TRDOS
-                jp      OUT_0_A_JP_3D2F
-; ---------------------------------------------------------------------------
-                ld      hl, 0C000h
-                ld      de, 0
-                ld      bc, 4000h
-                ldir
-                ld      a, 1
-                jr      loc_611
-; ---------------------------------------------------------------------------
-
-loc_5F8:                                ; CODE XREF: ROM:05CD↑j
-                pop     hl
-                ld      de, aNoTrdos    ; "no TRDOS"
-                ld      b, 8
-                rst     8
-                jr      loc_64B
-; ---------------------------------------------------------------------------
-
-loc_601:                                ; CODE XREF: ROM:05C7↑j
-                dec     a
-                ld      bc, 7FFDh
-
-; =============== S U B R O U T I N E =======================================
-
-
-sub_605:
-                jr      nz, loc_60B
-                ld      a, 0
-                jr      loc_60D
-; ---------------------------------------------------------------------------
-
-loc_60B:                                ; CODE XREF: sub_605↑j
-                ld      a, 10h
-
-loc_60D:                                ; CODE XREF: sub_605+4↑j
-                out     (c), a
-                ld      a, 20h ; ' '
-
-loc_611:                                ; CODE XREF: ROM:05C4↑j
-                                        ; ROM:05F6↑j
-                ld      hl, 0
-                ld      d, h
-                ld      e, l
-                call    TEST_ROM
-                pop     hl
-                ld      a, 7Fh
-                in      a, (0FEh)
-                rrca
-                jr      nc, loc_648
-                ld      a, (ix+0)
-                cp      e
-                jr      nz, loc_62F
-                ld      de, aOk         ; "OK"
-                ld      b, 2
-                rst     8
-                jr      loc_64B
-; ---------------------------------------------------------------------------
-
-loc_62F:                                ; CODE XREF: sub_605+20↑j
-                ld      a, (#5CFF)
-                or      18h
-                ld      (#5CFF), a
-                xor     18h
-                push    de
-                ld      de, 8000h
-
-loc_63D:                                ; CODE XREF: sub_605+40↓j
-                xor     10h
-                out     (0FEh), a
-                ld      b, d
-
-loc_642:                                ; CODE XREF: sub_605:loc_642↓j
-                djnz    $
-                dec     e
-                jr      nz, loc_63D
-                pop     de
-
-loc_648:                                ; CODE XREF: sub_605+1A↑j
-                call    sub_796
-
-loc_64B:                                ; CODE XREF: ROM:05FF↑j
-                                        ; sub_605+28↑j
-                pop     af
-                inc     ix
-                inc     a
-                cp      4
-                jp      nz, loc_5A4
-                ld      hl, TEST_RAM_PROC_BODY
-                ld      de, TEST_RAM
-                ld      bc, 1Ah
-                ldir
-                ld      bc, 7FFDh
-                ld      hl, 0C000h
-                ld      hl, 40E0h
-                ld      de, aRam256Kbyte ; "RAM 256 Kbyte"
-                ld      b, 0Dh
-                rst     8
-                ld      e, 0
-
-loc_670:                                ; CODE XREF: sub_605+DC↓j
-                ld      a, e
-                cp      8
-                jr      c, loc_677
-                add     a, 38h ; '8'
-
-loc_677:                                ; CODE XREF: sub_605+6E↑j
-                ld      bc, 7FFDh
-                out     (c), a
-                push    de
-                ld      hl, 4804h
-                ld      a, e
-                push    af
-                and     7
-                sla     a
-                sla     a
-                sla     a
-                sla     a
-                sla     a
-                add     a, l
-                ld      l, a
-                ld      de, aPageN      ; "Page N "
-                ld      b, 0Bh
-                rst     8
-                dec     hl
-                dec     hl
-                dec     hl
-                dec     hl
-                pop     af
-                add     a, 30h ; '0'
-                cp      3Ah ; ':'
-                jr      c, loc_6A3
-                add     a, 7
-
-loc_6A3:                                ; CODE XREF: sub_605+9A↑j
-                rst     10h
-                rst     18h
-                ld      iy, 39h ; '9'
-
-loc_6A9:                                ; CODE XREF: sub_605+CE↓j
-                ld      a, (iy+0)
-                cp      0C3h
-                jr      z, loc_6D5
-                pop     de
-                push    de
-                ld      a, e
-                cp      5
-                jr      nz, loc_6C0
-                ld      bc, 20h ; ' '
-                ld      ix, 0E000h
-                jr      loc_6C7
-; ---------------------------------------------------------------------------
-
-loc_6C0:                                ; CODE XREF: sub_605+B0↑j
-                ld      bc, 40h ; '@'
-                ld      ix, 0C000h
-
-loc_6C7:                                ; CODE XREF: sub_605+B9↑j
-                push    hl
-                ld      h, (iy+0)
-                call    TEST_RAM
-                jr      nz, loc_6F0
-                pop     hl
-                inc     iy
-                jr      loc_6A9
-; ---------------------------------------------------------------------------
-
-loc_6D5:                                ; CODE XREF: sub_605+A9↑j
-                ld      de, aOk         ; "OK"
-                ld      b, 2
-                rst     8
-
-loc_6DB:                                ; CODE XREF: sub_605+100↓j
-                pop     de
-                ld      a, e
-                inc     a
-                cp      10h
-                ld      e, a
-                jr      nz, loc_670
-                ld      a, (#5CFF)
-                xor     18h
-                ld      (#5CFF), a
-                out     (0FEh), a
-                jp      loc_54F
-; ---------------------------------------------------------------------------
-
-loc_6F0:                                ; CODE XREF: sub_605+C9↑j
-                ld      c, l
-                pop     hl
-                push    ix
-                pop     de
-                push    af
-                call    sub_796
-                rst     18h
-                ld      a, c
-                rst     28h
-                rst     18h
-                pop     af
-                rst     28h
-                call    sub_782
-                call    sub_777
-                jr      loc_6DB
-; End of function sub_605
-
-; ---------------------------------------------------------------------------
-
-TEST_RAM_PROC_BODY:                     ; DATA XREF: sub_605+4F↑o
-                ld      a, 1
-                out     (0), a
-
-loc_70B:                                ; CODE XREF: ROM:0717↓j
-                                        ; ROM:071A↓j
-                ld      (ix+0), h
-                ld      l, (ix+0)
-                ld      a, h
-                cp      l
-                jr      nz, loc_71C
-                inc     ix
-                djnz    loc_70B
-                dec     c
-                jr      nz, loc_70B
-
-loc_71C:                                ; CODE XREF: ROM:0713↑j
-                ld      a, 0
-                out     (0), a
-                ret
-; ---------------------------------------------------------------------------
-aTestRomRamN:   DEFB 'Test ROM/RAM N ' ; DATA XREF: ROM:0584↑o
-aNoTrdos:       DEFB 'no TRDOS'       ; DATA XREF: ROM:05F9↑o
-aRom64Kbyte:    DEFB 'ROM  64 Kbyte'  ; DATA XREF: ROM:0599↑o
-aRam256Kbyte:   DEFB 'RAM 256 Kbyte'  ; DATA XREF: sub_605+63↑o
-                db  32h ; 2
-                db  35h ; 5
-                db  36h ; 6
-aPressResForBre:DEFB 'Press <RES> for break'
-                                        ; DATA XREF: ROM:057B↑o
-aPageN:         DEFB 'Page N '        ; DATA XREF: ROM:05B6↑o
-                                        ; sub_605+8B↑o
-                db  20h
-                db  20h
-                db  20h
-                db  20h
-aOk:            DEFB 'OK'             ; DATA XREF: sub_605+22↑o
-                                        ; sub_605:loc_6D5↑o
-
-; =============== S U B R O U T I N E =======================================
-
-
-sub_777:                                ; CODE XREF: sub_605+FD↑p
-                                        ; sub_777+7↓j
-                ld      b, 28h ; '('
-
-loc_779:                                ; CODE XREF: sub_777+9↓j
-                ld      a, 0F7h
-                in      a, (7Eh)
-                rrca
-                jr      c, sub_777
-                djnz    loc_779
-; End of function sub_777
-
-
-; =============== S U B R O U T I N E =======================================
-
-
-sub_782:                                ; CODE XREF: sub_605+FA↑p
-                ld      a, 2
-                ld      de, 8000h
-
-loc_787:                                ; CODE XREF: sub_782+D↓j
-                xor     17h
-                out     (0FEh), a
-                ld      b, d
-
-loc_78C:                                ; CODE XREF: sub_782:loc_78C↓j
-                djnz    $
-                dec     e
-                jr      nz, loc_787
-                ld      a, 7
-                out     (0FEh), a
-                ret
-; End of function sub_782
-
-
-; =============== S U B R O U T I N E =======================================
-
-
-sub_796:                                ; CODE XREF: ROM:0593↑p
-                                        ; sub_605:loc_648↑p ...
-                ld      a, d
-                rst     28h
-                ld      a, e
-
-loc_799:                                ; CODE XREF: sub_28↑j
+PRINT_HEX_NUMBER:                                ; CODE XREF: sub_28↑j
                 push    af
                 rrca
                 rrca
                 rrca
                 rrca
-                call    _PRINT_HEX_NUM
+                call    PRINT_HEX_DIGIT
                 pop     af
-; End of function sub_796
 
-
-; =============== S U B R O U T I N E =======================================
-
-
-_PRINT_HEX_NUM:                         ; CODE XREF: sub_796+8↑p
+PRINT_HEX_DIGIT:                         ; CODE XREF: sub_796+8↑p
                 and     0Fh
                 cp      0Ah
                 jr      c, _PRINT_DEC_NUM
                 add     a, 7
 
-_PRINT_DEC_NUM:                         ; CODE XREF: _PRINT_HEX_NUM+4↑j
+_PRINT_DEC_NUM:                         ; CODE XREF: PRINT_HEX_DIGIT+4↑j
                 add     a, 30h ; '0'
 
 _PRINT_CHAR:                            ; CODE XREF: PRINT_CHAR_A↑j
@@ -1426,28 +984,28 @@ _PRINT_CHAR:                            ; CODE XREF: PRINT_CHAR_A↑j
                 push    de
                 push    hl
                 sub     20h ; ' '
-                jr      nc, loc_7BA
+                jr      nc, _DRAW_REGULAR_FONT_CHAR
                 add     a, 10h
                 ld      de, FONT_PSEUDOGRAPH
-                jr      loc_7BD
+                jr      _DRAW_CHAR
 ; ---------------------------------------------------------------------------
 
-loc_7BA:                                ; CODE XREF: _PRINT_HEX_NUM+F↑j
+_DRAW_REGULAR_FONT_CHAR:
                 ld      de, FONT_8x8
 
-loc_7BD:                                ; CODE XREF: _PRINT_HEX_NUM+16↑j
+_DRAW_CHAR:
                 ld      l, a
                 ld      h, 0
-                add     hl, hl          ; DE = FONT + 8 * A
+                add     hl, hl
                 add     hl, hl
                 add     hl, hl
                 add     hl, de
-                ex      de, hl
+                ex      de, hl          ; DE = FONT + 8 * A
                 pop     hl
                 push    hl
-                ld      b, 8
+                ld      b, 8            ; 8 lines of char
 
-loc_7C9:                                ; CODE XREF: _PRINT_HEX_NUM+2E↓j
+_DRAW_CHAR_LOOP:                                ; CODE XREF: PRINT_HEX_DIGIT+2E↓j
                 ld      a, (de)
                 ld      (hl), a
                 rra
@@ -1455,13 +1013,14 @@ loc_7C9:                                ; CODE XREF: _PRINT_HEX_NUM+2E↓j
                 ld      (hl), a
                 inc     h
                 inc     de
-                djnz    loc_7C9
+                djnz    _DRAW_CHAR_LOOP
                 pop     hl
                 inc     hl
                 pop     de
                 pop     bc
                 ret
-; End of function _PRINT_HEX_NUM
+
+; Data and code blobs
 
                 ORG #07F0
 
@@ -1472,8 +1031,8 @@ IMG             INCBIN "bins/menu48.bin"
 TURBO_LOADER_PATCH:
                 INCBIN "generated/48_turbo_vs_48_patch.bin"
                 db    0                 ; patch end
+
 CODE_BLOCK_1:   db 0F3h,0AFh, 11h,0FFh,0FFh,0C3h,0CBh, 11h
-                                        ; DATA XREF: ROM:0351↑o
                 db  2Ah, 5Dh, 5Ch, 22h, 5Fh, 5Ch, 18h, 43h
                 db 0C3h,0F2h, 15h,0FFh,0FFh,0FFh,0FFh,0FFh
                 db  2Ah, 5Dh, 5Ch, 7Eh,0CDh, 7Dh,   0,0D0h
