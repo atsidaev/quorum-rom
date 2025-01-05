@@ -5,7 +5,8 @@ import sys
 MAX_GAP = 4 # maximum length of equal bytes between two sequence of differences to be counted as part of difference
 
 def print_usage():
-    print("Usage: patch48_gen [--seq] [--ignore=ADDR1-ADDR2,ADDR3-ADDR4...] <initial.rom> <changed.rom> [diff.bin]")
+    print("Usage: patch48_gen [--seq] [--ignore=ADDR1-ADDR2,ADDR3-ADDR4...] [--force=ADDR,length] <initial.rom> <changed.rom> [diff.bin]")
+    print("ADDR is in hex, other integers are decimal")
     sys.exit(1)
 
 filenames = [ x for x in sys.argv[1:] if not x.startswith("-") ]
@@ -20,6 +21,15 @@ def output(addr, value):
         return hex(i)[2:].zfill(4)
 
     if isinstance(value, list):
+        for a,l in forced_lengths:
+            if a == addr:
+                if l < len(value):
+                    print("Don't know how to make list shorted at", addr)
+                    exit(3)
+                else:
+                    while l > len(value):
+                        value.append(rom1[addr + len(value)])
+
         if output_file:
             output_file.write(bytes([ len(value), addr % 256, addr // 256 ] + value))
         else:
@@ -34,6 +44,7 @@ def output(addr, value):
 
 is_sequence = False
 ignored = []
+forced_lengths = []
 
 options = [ x for x in sys.argv if x.startswith("-") ]
 for o in options:
@@ -45,6 +56,10 @@ for o in options:
         for v in vals:
             begin, end = v.split("-")
             ignored.append((int(begin, 16), int(end, 16)))
+    elif o.startswith("--force="):
+        val = o.split("=")
+        addr, length = val[1].split(",")
+        forced_lengths.append((int(addr, 16), int(length)))
     else:
         print_usage()
 

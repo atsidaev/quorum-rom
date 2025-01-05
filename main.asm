@@ -1469,44 +1469,8 @@ aKarimovKamill: DEFB 'Karimov Kamill  '
 aRomMenuQuorumV:DEFB 'ROM-MENU QUORUM V.4.2 27.06.1997'
 IMG             INCBIN "bins/menu48.bin"
 
-TURBO_LOADER_PATCH:db 51h               ; DATA XREF: PATCH_ROM↑o
-                dw 4DFh                 ; address
-                db 15h
-                dw 4E9h                 ; address
-                db 1Bh
-                dw 4F1h                 ; address
-                db 1Ah
-                dw 4F8h                 ; address
-                db 21h
-                dw 519h                 ; address
-                db 1Dh
-                dw 51Fh                 ; address
-                db 10h
-                dw 52Eh                 ; address
-                db 1Ah
-                dw 53Bh                 ; address
-                db 1
-                dw 572h                 ; address
-                db 1
-                dw 573h                 ; address
-                db 0CEh
-                dw 581h                 ; address
-                db 0E3h
-                dw 588h                 ; address
-                db 0E4h
-                dw 590h                 ; address
-                db 0ECh
-                dw 598h                 ; address
-                db 0D8h
-                dw 5A6h                 ; address
-                db 0D9h
-                dw 5C7h                 ; address
-                db 0E5h
-                dw 5CFh                 ; address
-                db 0D7h
-                dw 5D4h                 ; address
-                db 6
-                dw 5E8h                 ; address
+TURBO_LOADER_PATCH:
+                INCBIN "generated/48_turbo_vs_48_patch.bin"
                 db    0                 ; patch end
 CODE_BLOCK_1:   db 0F3h,0AFh, 11h,0FFh,0FFh,0C3h,0CBh, 11h
                                         ; DATA XREF: ROM:0351↑o
@@ -1516,7 +1480,9 @@ CODE_BLOCK_1:   db 0F3h,0AFh, 11h,0FFh,0FFh,0C3h,0CBh, 11h
                 db 0CDh, 74h,   0, 18h,0F7h
                 
                 ORG #1942
-ORIG_48_ROM_PATCH   INCBIN "bins/q48_vs_orig48_patch.bin"
+ORIG_48_ROM_PATCH
+                INCBIN "generated/q48_vs_orig48_patch.bin"
+                db    0                 ; patch end
 
                 ORG #1B60
 UNK_BLOB:       INCBIN "bins/unk.bin"
