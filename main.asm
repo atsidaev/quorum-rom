@@ -1019,8 +1019,10 @@ _TAPER_BLOB_END:
                 
                 ORG #1D00
 FONT_8x8:       INCBIN "bins/font8x8.bin"
+
+                ORG #2000
 FOXMON:         INCBIN "bins/foxmon.bin"
 COPY128_IMG:    INCBIN "bins/copy128.bin"
-UNK_BLOB2_0:    INCBIN "bins/unk2.bin"
+                DW 0xFFFF
 
                 SAVEBIN 'quorum-menu.rom', 0, 16384
