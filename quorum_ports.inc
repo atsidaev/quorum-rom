@@ -1,3 +1,6 @@
+PORT_FE         EQU #FE
+PORT_7FFD       EQU #7FFD
+
 PORT_00         EQU #0
 PORT_80         EQU #80 ; VG93 command/status port
 PORT_81         EQU #81 ; VG93 track port

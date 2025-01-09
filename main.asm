@@ -7,6 +7,9 @@
                 EDUP
 
 SCREEN_4000     EQU #4000
+SCREEN_ATTRIBUTES EQU #5800
+SCREEN_ATTRIBUTES_LENGTH EQU #300
+
 OUT_0_A_JP_3D2F EQU #5D15
 TEST_RAM        EQU #5D1A
 TEST_ROM        EQU #5D02
@@ -56,7 +59,7 @@ LOOP_FOREVER:
                 ld      a, (hl)
                 ld      (hl), a
                 xor     a
-                out     (0FEh), a
+                out     (PORT_FE), a
                 jr      LOOP_FOREVER
 
 ; RST 28
@@ -70,7 +73,7 @@ LOOP_FOREVER:
 
 CHECK_KEYBOARD_ON_RESET:
                 ld      a, #7E ; #7E selects two bottom half-rows
-                in      a, (#FE)
+                in      a, (PORT_FE)
                 rra     ; C = bit 0 (either CAPS SHIFT or SPACE)
                 jr      _CHECK_48_128_FAST_RESET
 
@@ -83,19 +86,17 @@ byte_3B:        db 0FFh
                 db 0, 80h, 0FFh, 0FFh
                                         ; DATA XREF: ROM:0165↓o
                 jp      loc_2EB
-                jp      sub_41F
-                jp      loc_3F5
+                jp      UNPACK_BLOCK
+UNPACK_ENTRY:   jp      UNPACK_BASIC_PROG
                 jp      ATTEMPT_TO_BOOT
 
 loc_4C:                                 ; CODE XREF: ROM:0015↑j
                 or      20h ; ' '
 ; START OF FUNCTION CHUNK FOR PATCH_ROM
 
-loc_4E:                                 ; CODE XREF: PATCH_ROM+62↓j
+loc_4E:
                 out     (PORT_00), a
                 pop     af
-
-_chunk1:
                 ei
                 ret
 ; END OF FUNCTION CHUNK FOR PATCH_ROM
@@ -144,7 +145,7 @@ _pause_4000h:
 
 RUN_BASIC_128:                           ; CODE XREF: ROM:01FA↓j
                 xor     a
-                ld      bc, 7FFDh
+                ld      bc, PORT_7FFD
                 out     (c), a
                 ld      (#FFFF), a
                 ld      a, #A8
@@ -155,7 +156,7 @@ RUN_BASIC_128:                           ; CODE XREF: ROM:01FA↓j
 
 FAST_RESET_48:
                 ld      a, 17h
-                ld      bc, 7FFDh
+                ld      bc, PORT_7FFD
                 out     (c), a
                 ld      hl, 0
                 push    hl
@@ -166,9 +167,9 @@ FAST_RESET_48:
 
 loc_A7:
                 ld      a, #7E      ; two bottom rows
-                in      a, (0FEh)
+                in      a, (PORT_FE)
                 rra     ; check CAPS/SPACE
-                jr      nc, loc_116
+                jr      nc, INIT_BASIC48_MENU
                 rra     ; check SYMB SHIFT/Z
                 jr      nc, FAST_RESET_48
                 ld      a, (#F000)
@@ -182,7 +183,7 @@ loc_BC:                                 ; CODE XREF: ROM:00B8↑j
                 ld      (#F000), a
                 ld      d, a
                 ld      l, 8
-                ld      bc, 7FFDh
+                ld      bc, PORT_7FFD
 
 loc_C5:                                 ; CODE XREF: ROM:00D0↓j
                 dec     l
@@ -241,7 +242,7 @@ loc_112:                                ; CODE XREF: ROM:00FA↑j
                 ld      a, 17h
                 out     (c), a
 
-loc_116:                                ; CODE XREF: ROM:loc_AC↑j
+INIT_BASIC48_MENU:
                 push    ix
                 push    iy
                 exx
@@ -266,11 +267,11 @@ NORMAL_RESET:
                 rrca                ; C = ESC
                 jp      nc, RUN_BASIC_48_MENU
                 xor     a
-                out     (0FEh), a
-                ld      hl, 4000h
+                out     (PORT_FE), a
+                ld      hl, SCREEN_4000
                 ld      (hl), a
-                ld      de, 4001h
-                ld      bc, 4000h
+                ld      de, SCREEN_4000 + 1
+                ld      bc, SCREEN_4000
                 ldir
                 ld      hl, 0
                 ld      c, 40h ; '@'
@@ -289,7 +290,7 @@ crc_loop:                               ; CODE XREF: ROM:014C↓j
 
 bad_crc_warn:                           ; CODE XREF: ROM:0160↓j
                 xor     12h
-                out     (0FEh), a
+                out     (PORT_FE), a
                 ld      b, d
                 djnz    $
                 dec     e
@@ -297,7 +298,7 @@ bad_crc_warn:                           ; CODE XREF: ROM:0160↓j
 
 crc_ok:
                 xor     a
-                out     (0FEh), a
+                out     (PORT_FE), a
                 ld      de, byte_3B
 
 loc_168:                                ; CODE XREF: ROM:0187↓j
@@ -306,7 +307,7 @@ loc_168:                                ; CODE XREF: ROM:0187↓j
                 jr      z, RUN_BOOT_DOS_AND_REDRAW
                 ld      h, a
                 ld      bc, 40h ; '@'
-                ld      ix, 4000h
+                ld      ix, SCREEN_4000
 
 FAST_RAM_TEST:
                 ld      (ix+0), h
@@ -325,12 +326,12 @@ FAST_RAM_TEST:
 ON_RAM_BAD:
                 ex      af, af'
                 ld      a, l
-                ld      hl, 5800h
+                ld      hl, SCREEN_ATTRIBUTES
                 ld      (hl), 0
-                ld      de, 5801h
-                ld      bc, 2FFh
+                ld      de, SCREEN_ATTRIBUTES + 1
+                ld      bc, SCREEN_ATTRIBUTES_LENGTH - 1
                 ldir
-                ld      hl, 5800h
+                ld      hl, SCREEN_ATTRIBUTES
                 ld      c, 18h
                 ld      de, 18h
 
@@ -358,14 +359,14 @@ loc_1A7:                                ; CODE XREF: ROM:01A3↑j
 
 RUN_BOOT_DOS_AND_REDRAW:
                 ld      a, 7
-                out     (0FEh), a
+                out     (PORT_FE), a
                 call    ATTEMPT_TO_BOOT
 
                 xor     a
-                out     (0FEh), a
-                ld      hl, 5800h
-                ld      de, 5801h
-                ld      bc, 2FFh
+                out     (PORT_FE), a
+                ld      hl, SCREEN_ATTRIBUTES
+                ld      de, SCREEN_ATTRIBUTES + 1
+                ld      bc, SCREEN_ATTRIBUTES_LENGTH - 1
                 ld      (hl), 7
                 ldir
                 call    DRAW_MENU
@@ -375,7 +376,7 @@ READ_MENU_KEYBORD:
                 ld      b, 0
 _loop_kbd:
                 ld      a, 0F7h     ; 12345 half-row
-                in      a, (0FEh)
+                in      a, (PORT_FE)
                 cpl
                 and     0Fh
                 cp      c
@@ -395,7 +396,7 @@ ON_KEYPRESS:
                 ld      de, 8080h
 _play_click:
                 xor     10h             ; generate square waveform
-                out     (0FEh), a       ; black border + click
+                out     (PORT_FE), a       ; black border + click
                 ld      b, d
                 djnz    $               ; pause a little
                 dec     e
@@ -414,7 +415,7 @@ _play_click:
 RUN_BASIC_48_MENU:                        ; CODE XREF: ROM:0056↑j
                                         ; ROM:0133↑j ...
                 xor     a
-                ld      bc, 7FFDh
+                ld      bc, PORT_7FFD
                 out     (c), a
                 ld      (#C066), a
                 ld      hl, 51FFh
@@ -423,12 +424,12 @@ RUN_BASIC_48_MENU:                        ; CODE XREF: ROM:0056↑j
                 ld      (#C025), a
 
 loc_219:                                ; CODE XREF: ROM:012B↑j
-                ld      bc, 7FFDh
+                ld      bc, PORT_7FFD
                 ld      a, 16h          ; Basic-48 menu is in PAGE 6
                 out     (c), a
                 ld      sp, 0
                 ld      hl, IMG
-                ld      de, 0C028h
+                ld      de, 0C028h      ; basic menu entry point
                 push    de
                 ld      bc, 10C0h
                 ldir
@@ -491,7 +492,7 @@ loc_2EE:                                ; CODE XREF: ROM:02F1↓j
                 ld      a, c
                 or      b
                 jr      nz, loc_2EE
-                ld      bc, 7FFDh
+                ld      bc, PORT_7FFD
                 ld      a, 10h
                 out     (c), a
                 xor     a
@@ -503,7 +504,7 @@ loc_2EE:                                ; CODE XREF: ROM:02F1↓j
                 ld      (sub_0), a
                 cp      (hl)
                 ld      (hl), e
-                ld      hl, 4000h
+                ld      hl, SCREEN_4000
                 res     7, (hl)
                 jp      nz, loc_3A6
                 ld      a, (#C026+1)
@@ -588,9 +589,6 @@ loc_389:                                ; CODE XREF: ROM:035B↑j
 
 
 PATCH_ROM:
-
-; FUNCTION CHUNK AT 004E SIZE 00000005 BYTES
-
                 ld      hl, TURBO_LOADER_PATCH
 
 _PATCH_TURBO_LOOP:                      ; CODE XREF: PATCH_ROM+D↓j
@@ -608,7 +606,7 @@ _PATCH_TURBO_LOOP:                      ; CODE XREF: PATCH_ROM+D↓j
 
 SWITCH_TO_48:                            ; CODE XREF: ROM:0323↑j
                                         ; ROM:038E↑j ...
-                ld      bc, 7FFDh
+                ld      bc, PORT_7FFD
                 ld      a, 17h
                 out     (c), a
 
@@ -630,7 +628,7 @@ loc_3B6:                                ; CODE XREF: PATCH_ROM+1A↑j
                 ld      r, a
                 pop     af
                 ld      i, a
-                ld      hl, 4000h
+                ld      hl, SCREEN_4000
                 set     0, (hl)
                 jp      po, loc_3C7
                 res     0, (hl)
@@ -652,7 +650,7 @@ loc_3C7:                                ; CODE XREF: PATCH_ROM+32↑j
                 rrca
                 rrca
                 rrca
-                out     (0FEh), a
+                out     (PORT_FE), a
 
 loc_3DE:                                ; CODE XREF: PATCH_ROM+24↑j
                 ld      a, (SCREEN_4000)
@@ -674,8 +672,8 @@ loc_3EF:                                ; CODE XREF: PATCH_ROM+59↑j
 
 ; ---------------------------------------------------------------------------
 
-loc_3F5:                                ; CODE XREF: ROM:0046↑j
-                ld      bc, 7FFDh
+UNPACK_BASIC_PROG:
+                ld      bc, PORT_7FFD
                 ld      a, 17h
                 out     (c), a
                 ex      de, hl
@@ -695,7 +693,7 @@ loc_3F5:                                ; CODE XREF: ROM:0046↑j
                 ld      c, l
                 ld      b, h
                 pop     hl
-                call    sub_41F
+                call    UNPACK_BLOCK
                 ld      l, (ix+2)
                 ld      h, (ix+3)
                 exx
@@ -705,12 +703,14 @@ loc_3F5:                                ; CODE XREF: ROM:0046↑j
 ; =============== S U B R O U T I N E =======================================
 
 
-sub_41F:                                ; CODE XREF: ROM:0043↑j
-                                        ; ROM:0410↑p
+; HL - begin of packed data
+; DE - destination
+; BC - packed data length
+UNPACK_BLOCK:
                 push    bc
 
-loc_420:                                ; CODE XREF: sub_41F+16↓j
-                                        ; sub_41F+25↓j ...
+loc_420:                                ; CODE XREF: UNPACK_BLOCK+16↓j
+                                        ; UNPACK_BLOCK+25↓j ...
                 xor     a
                 pop     bc
                 push    hl
@@ -722,10 +722,10 @@ loc_420:                                ; CODE XREF: sub_41F+16↓j
                 inc     hl
                 ld      b, a
                 rlca
-                jr      c, loc_437
+                jr      c, _process_rle
                 inc     b
 
-loc_42F:                                ; CODE XREF: sub_41F+14↓j
+loc_42F:                                ; CODE XREF: UNPACK_BLOCK+14↓j
                 ld      a, (hl)
                 inc     hl
                 ld      (de), a
@@ -734,7 +734,7 @@ loc_42F:                                ; CODE XREF: sub_41F+14↓j
                 jr      loc_420
 ; ---------------------------------------------------------------------------
 
-loc_437:                                ; CODE XREF: sub_41F+D↑j
+_process_rle:
                 ld      a, (hl)
                 inc     hl
                 inc     b
@@ -742,15 +742,15 @@ loc_437:                                ; CODE XREF: sub_41F+D↑j
                 res     7, b
                 ld      c, a
 
-loc_43F:                                ; CODE XREF: sub_41F+23↓j
+_process_rle_loop:
                 ld      a, c
                 ld      (de), a
                 inc     de
-                djnz    loc_43F
+                djnz    _process_rle_loop
                 jr      loc_420
 ; ---------------------------------------------------------------------------
 
-loc_446:                                ; CODE XREF: sub_41F+1B↑j
+loc_446:                                ; CODE XREF: UNPACK_BLOCK+1B↑j
                 push    af
                 ld      a, (hl)
                 inc     hl
@@ -761,8 +761,8 @@ loc_446:                                ; CODE XREF: sub_41F+1B↑j
                 inc     c
                 inc     b
 
-loc_44F:                                ; CODE XREF: sub_41F+34↓j
-                                        ; sub_41F+37↓j
+loc_44F:                                ; CODE XREF: UNPACK_BLOCK+34↓j
+                                        ; UNPACK_BLOCK+37↓j
                 pop     af
                 ld      (de), a
                 push    af
@@ -772,7 +772,7 @@ loc_44F:                                ; CODE XREF: sub_41F+34↓j
                 jr      nz, loc_44F
                 pop     af
                 jr      loc_420
-; End of function sub_41F
+; End of function UNPACK_BLOCK
 
 INIT_FDD_CONTROLLER_AND_EXIT:
                 xor     a ; NO DRIVE SELECTED AND NO MOTOR
@@ -847,8 +847,6 @@ _LOAD_SECTOR:
 ; End of function _LOAD_SECTOR
 
 ; ---------------------------------------------------------------------------
-; START OF FUNCTION CHUNK FOR ATTEMPT_TO_BOOT
-
 RUN_DISK:
                 ld      a, e
                 dec     a
@@ -866,7 +864,7 @@ RUN_DISK:
 START_TRDOS:
                 xor     a
                 out     (PORT_85), a
-                ld      bc, 7FFDh
+                ld      bc, PORT_7FFD
                 ld      a, 17h
                 out     (c), a
                 ; PREPARE HELPER IN RAM (we cannot switch ROM to TR-DOS from QUORUM ROM directly)
@@ -880,7 +878,7 @@ START_TRDOS:
 ; ---------------------------------------------------------------------------
 
 START_CPM:                                ; CODE XREF: ATTEMPT_TO_BOOT+6D↑j
-                ld      bc, 7FFDh
+                ld      bc, PORT_7FFD
                 ld      a, 1Fh
                 out     (c), a
                 ld      e, 21h
@@ -1011,7 +1009,13 @@ ORIG_48_ROM_PATCH
                 db    0                 ; patch end
 
                 ORG #1B60
-UNK_BLOB:       INCBIN "bins/unk.bin"
+PACKED_TAPER:
+                DW _TAPER_BLOB_END - _TAPER_BLOB ; length
+                DW #FF2E                         ; entry point
+_TAPER_BLOB:
+                INCBIN "generated/taper_packed.bin"
+_TAPER_BLOB_END:
+                ret
                 
                 ORG #1D00
 FONT_8x8:       INCBIN "bins/font8x8.bin"

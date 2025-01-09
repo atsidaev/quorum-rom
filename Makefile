@@ -9,6 +9,9 @@ generated/q48_vs_orig48_patch.bin: resources/quorum48.rom resources/48.rom
 generated/48_turbo_vs_48_patch.bin: resources/48.rom resources/48_turbo.rom
 	python3 scripts/patch48_gen.py --ignore=0000-0400 $^ $@
 
-quorum-menu.rom: main.asm generated/q48_vs_orig48_patch.bin generated/48_turbo_vs_48_patch.bin
+generated/taper_packed.bin: resources/taper.bin
+	python3 scripts/compress_block.py $^ $@
+
+quorum-menu.rom: main.asm generated/q48_vs_orig48_patch.bin generated/48_turbo_vs_48_patch.bin generated/taper_packed.bin
 	sjasmplus $<
 	md5sum -c $@.md5
