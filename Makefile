@@ -1,4 +1,5 @@
 all: quorum-menu.rom
+	md5sum -c checksums.md5
 
 clean:
 	rm quorum-menu.rom generated/q48_vs_orig48_patch.bin generated/48_turbo_vs_48_patch.bin || true
@@ -14,4 +15,3 @@ generated/taper_packed.bin: resources/taper.bin
 
 quorum-menu.rom: main.asm generated/q48_vs_orig48_patch.bin generated/48_turbo_vs_48_patch.bin generated/taper_packed.bin
 	sjasmplus $<
-	md5sum -c $@.md5
