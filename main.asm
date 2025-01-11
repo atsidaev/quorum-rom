@@ -473,14 +473,8 @@ menu_line3:     DEFB 0x13, '3 - Boot DOS', 0x14
 menu_line4:     DEFB 0x13, '4 - Test MEM', 0x14
 menu_border_bot:DEFB 15h, 16h, 16h, 16h, 16h, 16h, 16h, 16h, 16h, 16h, 16h, 16h, 16h, 17h
 
-FONT_PSEUDOGRAPH:db 0FFh,0FFh, 80h, 80h, 80h, 80h, 80h, 80h
-                db 0FFh,0FFh,   0,   0,   0,   0,   0,   0
-                db 0FFh,0FFh,   2,   2,   2,   2,   2,   2
-                db  80h, 80h, 80h, 80h, 80h, 80h, 80h, 80h
-                db    2,   2,   2,   2,   2,   2,   2,   2
-                db  80h, 80h, 80h, 80h, 80h, 80h,0FFh,0FFh
-                db    0,   0,   0,   0,   0,   0,0FFh,0FFh
-                db    2,   2,   2,   2,   2,   2,0FFh,0FFh
+FONT_PSEUDOGRAPH:
+                INCBIN "generated/font_pseudograph.bin"
 ; ---------------------------------------------------------------------------
 
 loc_2EB:                                ; CODE XREF: ROM:0040↑j
@@ -1018,7 +1012,7 @@ _TAPER_BLOB_END:
                 ret
                 
                 ORG #1D00
-FONT_8x8:       INCBIN "bins/font8x8.bin"
+FONT_8x8:       INCBIN "generated/font_zx.bin"
 
                 ORG #2000
 FOXMON:         INCBIN "bins/foxmon.bin"
