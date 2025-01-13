@@ -1,0 +1,12 @@
+name: Build ROM file
+on: [push]
+jobs:
+  Default:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@main
+      - name: Download and install sjasmplus and Python libs
+        run: make prepare_worker
+      - name: Build project 
+        run: make

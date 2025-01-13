@@ -21,3 +21,10 @@ quorum-menu.rom: main.asm \
 				 generated/taper_packed.bin \
 				 generated/font_zx.bin generated/font_pseudograph.bin
 	sjasmplus $<
+
+prepare_worker:
+	sudo apt-get -y update
+	sudo apt-get -y install python3-pil
+	wget https://github.com/atsidaev/quorum-rom/wiki/bin/sjasmplus -O sjasmplus
+	chmod +x sjasmplus
+	sudo mv sjasmplus /usr/bin
