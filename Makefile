@@ -1,4 +1,4 @@
-all: quorum-menu.rom
+all: quorum-menu.rom quorum.rom
 	md5sum -c checksums.md5
 
 clean:
@@ -17,9 +17,12 @@ generated/font_%.bin: resources/font_%.png
 	python3 scripts/fontbin.py $^ $@
 
 quorum-menu.rom: main.asm \
-				 generated/q48_vs_orig48_patch.bin generated/48_turbo_vs_48_patch.bin \
-				 generated/taper_packed.bin \
-				 generated/font_zx.bin generated/font_pseudograph.bin
+                 generated/q48_vs_orig48_patch.bin generated/48_turbo_vs_48_patch.bin \
+                 generated/taper_packed.bin \
+                 generated/font_zx.bin generated/font_pseudograph.bin
+	sjasmplus $<
+
+quorum.rom: link.asm quorum-menu.rom resources/quorum48.rom resources/128.rom resources/trdos.rom
 	sjasmplus $<
 
 prepare_worker:
