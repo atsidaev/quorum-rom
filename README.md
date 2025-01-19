@@ -5,11 +5,11 @@ Current state - original V4.2 ROM for Quorum 256 is reversed and main part is di
 # Reverse status
 
 ✔️ System menu \
-❌ Quorum menu for 48K mode (undisassembled blob) \
+❔ Quorum menu for 48K mode (undisassembled blob, not sure that should be reversed at this stage) \
 ✔️ Patches for ZX48 full compatibility mode (Python script compares Quorum 48 ROM against ZX Spectrum 48 ROM and generates binary patch) \
 ✔️ Fonts (Python script converts font in PNG to binary format) \
 ✔️ Taper (BASIC snapshot. Python script compresses it to the required format) \
-❌ Memtest (ASM code extracted from main.asm, full reverse TBD) \
+✔️ Memtest (ASM code extracted from main.asm, patch done to support testing of all 1024 Kbytes of RAM) \
 ❔ Foxmon (blob extracted, not sure that disasm needed)
 
 # TODO after initial reverse
