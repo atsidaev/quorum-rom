@@ -1,7 +1,7 @@
 all: roms
 	md5sum -c checksums.md5
 
-roms: quorum-menu.rom quorum-menu-1024plus.rom quorum.rom
+roms: quorum-menu.rom quorum-menu-1024plus.rom quorum.rom quorum-1024plus.rom
 
 clean:
 	rm quorum*.rom  generated/*.bin || true
@@ -25,12 +25,15 @@ quorum-menu.rom: main.asm memtest.asm memtest_proc.asm\
 	sjasmplus --sym=$(@:.rom=.sym) $<
 	python3 scripts/fix_crc.py $@ $(@:.rom=.sym) ROM_CRC_VALUE
 
-quorum-menu-1024plus.rom: main.patch.asm quorum-menu.rom
+quorum-menu-1024plus.rom: quorum-menu-1024plus.asm quorum-menu.rom
 	sjasmplus $<
 	python3 scripts/fix_crc.py $@ quorum-menu.sym ROM_CRC_VALUE
 
 quorum.rom: link.asm quorum-menu-1024plus.rom resources/quorum48.rom resources/128.rom resources/trdos.rom
-	sjasmplus $<
+	sjasmplus $< -DINPUT="quorum-menu.rom" -DOUTPUT=\"$@\"
+
+quorum-1024plus.rom: link.asm quorum-menu-1024plus.rom resources/quorum48.rom resources/128.rom resources/trdos.rom
+	sjasmplus $< -DINPUT="quorum-menu-1024plus.rom" -DOUTPUT=\"$@\"
 
 prepare_worker:
 	sudo apt-get -y update

@@ -380,7 +380,8 @@ _loop_kbd:
                 ld      a, 0F7h     ; 12345 half-row
                 in      a, (PORT_FE)
                 cpl
-                and     0Fh
+PATCH_READ_KBD1:
+                and     0Fh ; 4 keys only
                 cp      c
                 jr      nz, loc_1E6 ; stabilize reading
                 djnz    _loop_kbd
@@ -411,6 +412,7 @@ _play_click:
                 jr      c, RUN_BASIC_48_MENU
                 rrca
                 jr      c, RUN_BOOT_DOS_AND_REDRAW
+PATCH_READ_KBD2:
                 jp      RUN_TEST_MEM
 ; END OF FUNCTION ON_KEYPRESS
 
@@ -458,6 +460,7 @@ draw_menu_loop:                         ; CODE XREF: DRAW_MENU+1B↓j
                 rst     8
                 pop     af
                 inc     a
+PATCH_DRAW_MENU1:
                 cp      6
                 jr      nz, draw_menu_loop
                 ld      hl, VER_BEGIN_SCREEN_ADDR
@@ -1020,5 +1023,7 @@ FONT_8x8:       INCBIN "generated/font_zx.bin"
 FOXMON:         INCBIN "bins/foxmon.bin"
 COPY128_IMG:    INCBIN "bins/copy128.bin"
                 DW 0xFFFF
+
+SYS_ROM_EMPTY_SPACE:
 
                 SAVEBIN 'quorum-menu.rom', 0, 16384

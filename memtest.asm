@@ -188,6 +188,7 @@ loc_64B:                                ; CODE XREF: ROM:05FF↑j
                 ld      hl, 0C000h
                 ld      hl, 40E0h
                 ld      de, aRam256Kbyte ; "RAM 256 Kbyte"
+PATCH_MEMTEST1:
                 ld      b, 0Dh
                 rst     8
                 ld      e, 0
@@ -195,10 +196,11 @@ loc_64B:                                ; CODE XREF: ROM:05FF↑j
 loc_670:                                ; CODE XREF: sub_605+DC↓j
                 ld      a, e
                 cp      8
-                jr      c, loc_677
+PATCH_MEMTEST2:
+                jr      c, TEST_RAM_PAGE
                 add     a, 38h ; '8'
 
-loc_677:                                ; CODE XREF: sub_605+6E↑j
+TEST_RAM_PAGE:
                 ld      bc, 7FFDh
                 out     (c), a
                 push    de
@@ -216,6 +218,7 @@ loc_677:                                ; CODE XREF: sub_605+6E↑j
                 ld      de, aPageN      ; "Page N "
                 ld      b, 0Bh
                 rst     8
+PATCH_MEMTEST3:
                 dec     hl
                 dec     hl
                 dec     hl
@@ -228,8 +231,8 @@ loc_677:                                ; CODE XREF: sub_605+6E↑j
 
 loc_6A3:                                ; CODE XREF: sub_605+9A↑j
                 rst     10h
-                rst     18h
-                ld      iy, 39h ; '9'
+                rst     18h             ; print space before 'OK'/error
+                ld      iy, MEMORY_TEST_PATTERNS
 
 loc_6A9:                                ; CODE XREF: sub_605+CE↓j
                 ld      a, (iy+0)
@@ -264,11 +267,12 @@ loc_6D5:                                ; CODE XREF: sub_605+A9↑j
                 ld      b, 2
                 rst     8
 
-loc_6DB:                                ; CODE XREF: sub_605+100↓j
+loc_6DB:
                 pop     de
                 ld      a, e
                 inc     a
-                cp      10h
+PATCH_MEMTEST4:
+                cp      10h             ; 16 pages - for 256 Kb
                 ld      e, a
                 jr      nz, loc_670
                 ld      a, (#5CFF)
