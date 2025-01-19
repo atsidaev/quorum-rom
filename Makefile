@@ -1,5 +1,7 @@
-all: quorum-menu.rom quorum.rom
+all: roms
 	md5sum -c checksums.md5
+
+roms: quorum-menu.rom quorum.rom
 
 clean:
 	rm quorum-menu.rom generated/*.bin || true
@@ -16,7 +18,7 @@ generated/taper_packed.bin: resources/taper.bin
 generated/font_%.bin: resources/font_%.png
 	python3 scripts/fontbin.py $^ $@
 
-quorum-menu.rom: main.asm \
+quorum-menu.rom: main.asm memtest.asm memtest_proc.asm\
                  generated/q48_vs_orig48_patch.bin generated/48_turbo_vs_48_patch.bin \
                  generated/taper_packed.bin \
                  generated/font_zx.bin generated/font_pseudograph.bin

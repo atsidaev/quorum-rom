@@ -239,13 +239,13 @@ loc_6A9:                                ; CODE XREF: sub_605+CE↓j
                 push    de
                 ld      a, e
                 cp      5
-                jr      nz, loc_6C0
+                jr      nz, TEST_BANK_NOT_5
                 ld      bc, 20h ; ' '
-                ld      ix, 0E000h
+                ld      ix, 0E000h  ; skip test code and stack area in bank 5
                 jr      loc_6C7
 ; ---------------------------------------------------------------------------
 
-loc_6C0:                                ; CODE XREF: sub_605+B0↑j
+TEST_BANK_NOT_5:
                 ld      bc, 40h ; '@'
                 ld      ix, 0C000h
 
@@ -327,15 +327,8 @@ aRam256Kbyte:   DEFB 'RAM 256 Kbyte'  ; DATA XREF: sub_605+63↑o
                 db  35h ; 5
                 db  36h ; 6
 aPressResForBre:DEFB 'Press <RES> for break'
-                                        ; DATA XREF: ROM:057B↑o
-aPageN:         DEFB 'Page N '        ; DATA XREF: ROM:05B6↑o
-                                        ; sub_605+8B↑o
-                db  20h
-                db  20h
-                db  20h
-                db  20h
-aOk:            DEFB 'OK'             ; DATA XREF: sub_605+22↑o
-                                        ; sub_605:loc_6D5↑o
+aPageN:         DEFB 'Page N     '
+aOk:            DEFB 'OK'
 
 ; =============== S U B R O U T I N E =======================================
 
