@@ -1,10 +1,10 @@
 all: roms
 	md5sum -c checksums.md5
 
-roms: quorum-menu.rom quorum.rom
+roms: quorum-menu.rom quorum-menu-1024plus.rom quorum.rom
 
 clean:
-	rm quorum-menu.rom generated/*.bin || true
+	rm quorum*.rom  generated/*.bin || true
 
 generated/q48_vs_orig48_patch.bin: resources/quorum48.rom resources/48.rom
 	python3 scripts/patch48_gen.py --seq --ignore=0013-0017,0330-0332,3800-4000 --force=005F,16 $^ $@
@@ -22,9 +22,14 @@ quorum-menu.rom: main.asm memtest.asm memtest_proc.asm\
                  generated/q48_vs_orig48_patch.bin generated/48_turbo_vs_48_patch.bin \
                  generated/taper_packed.bin \
                  generated/font_zx.bin generated/font_pseudograph.bin
-	sjasmplus $<
+	sjasmplus --sym=$(@:.rom=.sym) $<
+	python3 scripts/fix_crc.py $@ $(@:.rom=.sym) ROM_CRC_VALUE
 
-quorum.rom: link.asm quorum-menu.rom resources/quorum48.rom resources/128.rom resources/trdos.rom
+quorum-menu-1024plus.rom: main.patch.asm quorum-menu.rom
+	sjasmplus $<
+	python3 scripts/fix_crc.py $@ quorum-menu.sym ROM_CRC_VALUE
+
+quorum.rom: link.asm quorum-menu-1024plus.rom resources/quorum48.rom resources/128.rom resources/trdos.rom
 	sjasmplus $<
 
 prepare_worker:
