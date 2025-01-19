@@ -69,7 +69,7 @@ LOOP_FOREVER:
 ; Unreferenced
                 out     (PORT_00), a
                 jr      loc_6D
-                db 0DAh     ; ?????
+ROM_CRC_VALUE   db #00         ; Unknown, let's use it to equalize CRC to 0
 
 CHECK_KEYBOARD_ON_RESET:
                 ld      a, #7E ; #7E selects two bottom half-rows
@@ -81,10 +81,12 @@ CHECK_KEYBOARD_ON_RESET:
                 ORG #0038
                 ret
 
-                dw 0AA55h
-byte_3B:        db 0FFh
-                db 0, 80h, 0FFh, 0FFh
-                                        ; DATA XREF: ROM:0165↓o
+MEMORY_TEST_PATTERNS:
+                db #55
+                db #AA
+SKIP_MEM_TEST:  db #FF                  ; set to #80 to skip memory test
+                db #00, #80, #FF, #FF
+
                 jp      loc_2EB
                 jp      UNPACK_BLOCK
 UNPACK_ENTRY:   jp      UNPACK_BASIC_PROG
@@ -299,7 +301,7 @@ bad_crc_warn:                           ; CODE XREF: ROM:0160↓j
 crc_ok:
                 xor     a
                 out     (PORT_FE), a
-                ld      de, byte_3B
+                ld      de, SKIP_MEM_TEST
 
 loc_168:                                ; CODE XREF: ROM:0187↓j
                 ld      a, (de)
