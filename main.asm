@@ -373,6 +373,7 @@ RUN_BOOT_DOS_AND_REDRAW:
                 ldir
                 call    DRAW_MENU
 
+PATCH_READ_KBD1:
                 ld      c, 0
 READ_MENU_KEYBORD:
                 ld      b, 0
@@ -380,7 +381,6 @@ _loop_kbd:
                 ld      a, 0F7h     ; 12345 half-row
                 in      a, (PORT_FE)
                 cpl
-PATCH_READ_KBD1:
                 and     0Fh ; 4 keys only
                 cp      c
                 jr      nz, loc_1E6 ; stabilize reading
@@ -414,7 +414,7 @@ _play_click:
                 jr      c, RUN_BOOT_DOS_AND_REDRAW
 PATCH_READ_KBD2:
                 jp      RUN_TEST_MEM
-; END OF FUNCTION ON_KEYPRESS
+END_ON_KEYPRESS:
 
 RUN_BASIC_48_MENU:                        ; CODE XREF: ROM:0056↑j
                                         ; ROM:0133↑j ...
