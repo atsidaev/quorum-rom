@@ -81,11 +81,12 @@ CHECK_KEYBOARD_ON_RESET:
                 ORG #0038
                 ret
 
+; iterate until #80 is found
 MEMORY_TEST_PATTERNS:
                 db #55
                 db #AA
-SKIP_MEM_TEST:  db #FF                  ; set to #80 to skip memory test
-                db #00, #80, #FF, #FF
+FAST_TEST_PATTERNS:
+                db #FF, #00, #80, #FF, #FF
 
                 jp      loc_2EB
                 jp      UNPACK_BLOCK
@@ -96,7 +97,7 @@ loc_4C:                                 ; CODE XREF: ROM:0015↑j
                 or      20h ; ' '
 ; START OF FUNCTION CHUNK FOR PATCH_ROM
 
-loc_4E:
+OUT_0_RET:
                 out     (PORT_00), a
                 pop     af
                 ei
@@ -109,9 +110,9 @@ loc_4E:
                 db 0FFh, 0FFh, 0, 5Dh, 0D9h, 0CAh, 0F3h, 18h, 0F1h
 ; ---------------------------------------------------------------------------
 
-loc_62:
+OUT_0_A_SWITCH_TO_BASIC_ROM:
                 out     (PORT_00), a
-                jr      loc_62
+                jr      OUT_0_A_SWITCH_TO_BASIC_ROM
 
 ; NMI
                 ORG #0066
@@ -125,7 +126,7 @@ loc_62:
 loc_6D:                                 ; CODE XREF: ROM:002D↑j
                 or      20h ; ' '
 
-loc_6F:                                 ; CODE XREF: ROM:loc_A5↓j
+OUT_0_A_POP_AF_RET:                                 ; CODE XREF: ROM:loc_A5↓j
                                         ; PATCH_ROM:loc_3EF↓j
                 out     (PORT_00), a
                 pop     af
@@ -150,7 +151,7 @@ RUN_BASIC_128:                           ; CODE XREF: ROM:01FA↓j
                 ld      bc, PORT_7FFD
                 out     (c), a
                 ld      (#FFFF), a
-                ld      a, #A8
+                ld      a, #A8  ; TODO fix
                 ld      hl, #D3
                 ld      (#FFFD), hl
                 jp      #FFFD ; out (PORT_00), A8 + JP 00
@@ -162,9 +163,9 @@ FAST_RESET_48:
                 out     (c), a
                 ld      hl, 0
                 push    hl
-                ld      a, 0E0h
+                ld      a, 0E0h ; TODO fix
                 push    af
-                jr      loc_6F
+                jr      OUT_0_A_POP_AF_RET
 ; ---------------------------------------------------------------------------
 
 loc_A7:
@@ -213,7 +214,7 @@ loc_D4:                                 ; CODE XREF: ROM:loc_CC↑j
                 out     (c), a
                 ld      a, e
                 ld      (#F000), a
-                ld      a, 9
+                ld      a, 9    ; TODO fix?
                 jr      loc_10D
 ; ---------------------------------------------------------------------------
 
@@ -232,12 +233,12 @@ loc_F3:
                 out     (c), a
                 ld      a, e
                 ld      (#F000), a
-                ld      a, 1
+                ld      a, 1    ; TODO fix?
 
 loc_10D:                                ; CODE XREF: ROM:00F0↑j
                 pop     hl
                 pop     de
-                jp      loc_62
+                jp      OUT_0_A_SWITCH_TO_BASIC_ROM
 ; ---------------------------------------------------------------------------
 
 loc_112:                                ; CODE XREF: ROM:00FA↑j
@@ -301,7 +302,7 @@ bad_crc_warn:                           ; CODE XREF: ROM:0160↓j
 crc_ok:
                 xor     a
                 out     (PORT_FE), a
-                ld      de, SKIP_MEM_TEST
+                ld      de, FAST_TEST_PATTERNS
 
 loc_168:                                ; CODE XREF: ROM:0187↓j
                 ld      a, (de)
@@ -371,6 +372,7 @@ RUN_BOOT_DOS_AND_REDRAW:
                 ld      bc, SCREEN_ATTRIBUTES_LENGTH - 1
                 ld      (hl), 7
                 ldir
+PATCH_DRAW_MENU1:
                 call    DRAW_MENU
 
 PATCH_READ_KBD1:
@@ -460,7 +462,7 @@ draw_menu_loop:                         ; CODE XREF: DRAW_MENU+1B↓j
                 rst     8
                 pop     af
                 inc     a
-PATCH_DRAW_MENU1:
+PATCH_DRAW_MENU2:
                 cp      6
                 jr      nz, draw_menu_loop
                 ld      hl, VER_BEGIN_SCREEN_ADDR
@@ -494,7 +496,7 @@ loc_2EE:                                ; CODE XREF: ROM:02F1↓j
                 ld      bc, PORT_7FFD
                 ld      a, 10h
                 out     (c), a
-                xor     a
+                xor     a   ; TODO fix
                 out     (PORT_00), a
                 ld      hl, 0C000h
                 ld      e, (hl)
@@ -526,13 +528,13 @@ loc_326:                                ; CODE XREF: ROM:0315↑j
                 ldir
                 jp      #C003
 ; ---------------------------------------------------------------------------
-                ld      a, 20h ; ' '
+                ld      a, 20h ; TODO fix
                 out     (PORT_00), a
                 ld      hl, 28h ; '('
                 ld      de, 0C028h
                 ld      bc, 3FD8h
                 ldir
-                xor     a
+                xor     a   ; TODO fix
                 out     (PORT_00), a
                 jp      loc_34B
 ; ---------------------------------------------------------------------------
@@ -613,15 +615,15 @@ loc_3A6:                                ; CODE XREF: ROM:030D↑j
                 exx
                 ld      a, h
                 cp      40h ; '@'
-                jr      nc, loc_3B6
+                jr      nc, RETURN_FROM_NMI
                 ld      hl, 0
                 ld      sp, 4008h
                 push    hl
                 push    hl
-                jr      loc_3DE
+                jr      SWITCH_TO_BASIC48
 ; ---------------------------------------------------------------------------
 
-loc_3B6:                                ; CODE XREF: PATCH_ROM+1A↑j
+RETURN_FROM_NMI:                                ; CODE XREF: PATCH_ROM+1A↑j
                 ld      sp, hl
                 pop     af
                 ld      r, a
@@ -651,7 +653,7 @@ loc_3C7:                                ; CODE XREF: PATCH_ROM+32↑j
                 rrca
                 out     (PORT_FE), a
 
-loc_3DE:                                ; CODE XREF: PATCH_ROM+24↑j
+SWITCH_TO_BASIC48:                                ; CODE XREF: PATCH_ROM+24↑j
                 ld      a, (SCREEN_4000)
                 bit     7, a
                 jr      nz, loc_3EB
@@ -661,12 +663,12 @@ loc_3DE:                                ; CODE XREF: PATCH_ROM+24↑j
 ; ---------------------------------------------------------------------------
 
 loc_3EB:                                ; CODE XREF: PATCH_ROM+53↑j
-                bit     0, a
-                ld      a, 41h ; 'A'
+                bit     0, a   ; from NMI or not?
+                ld      a, 41h ; TODO fix
 
 loc_3EF:                                ; CODE XREF: PATCH_ROM+59↑j
-                jp      nz, loc_6F
-                jp      loc_4E
+                jp      nz, OUT_0_A_POP_AF_RET
+                jp      OUT_0_RET
 ; End of function PATCH_ROM
 
 ; ---------------------------------------------------------------------------
@@ -872,7 +874,7 @@ START_TRDOS:
                 ld      bc, OUT_0_A_JP_3D2F_PROC_BODY_END - OUT_0_A_JP_3D2F_PROC_BODY
                 ldir
                 push    bc
-                ld      a, 0E0h
+                ld      a, 0E0h ; TODO fix
                 jp      OUT_0_A_JP_3D2F
 ; ---------------------------------------------------------------------------
 

@@ -1,10 +1,17 @@
 ; Patch file for original quorum-menu.rom
 
+VAR_PORT_00      EQU #4001
+VAR_PORT_00_ATTR EQU #5801
+
                 DEVICE ZXSPECTRUM48
                 ORG 0
                 INCBIN "quorum-menu.rom"
 
                 INCLUDE "quorum-menu.sym"
+
+                ORG PATCH_DRAW_MENU1
+                JP ON_DRAW_MENU
+
                 ; New keyboard read logic
                 ORG PATCH_READ_KBD1:
                 ld      c, 0
@@ -43,14 +50,7 @@ _play_click_new:
 
                 ASSERT $ <= END_ON_KEYPRESS
 
-                ; ORG PATCH_READ_KBD2
-                ; jp      CONTINUE_KEYPRESS_CHECK
-
-                ; ORG     DRAW_MENU
-                ; xor     a
-                ; ld      de, new_menu_border_top
-
-                ORG PATCH_DRAW_MENU1
+                ORG PATCH_DRAW_MENU2
                 jp END_MENU_DRAWING
                 nop
 PRINT_MENU_VER:
@@ -104,15 +104,15 @@ ON_KEYPRESS_NEW:
                 JR Z, TOGGLE_128K
                 JP READ_MENU_KEYBORD_NEW
 TOGGLE_PENT
-                IN A, (0)
+                LD A, (VAR_PORT_00)
                 XOR #4
-                OUT (0), A
+                LD (VAR_PORT_00), A
                 JR CLICK_AND_RUN_BOOT_DOS_AND_REDRAW
 
 TOGGLE_128K:
-                IN A, (0)
+                LD A, (VAR_PORT_00)
                 XOR #10
-                OUT (0), A
+                LD (VAR_PORT_00), A
                 JR CLICK_AND_RUN_BOOT_DOS_AND_REDRAW
 
 BEEP_AND_RUN_BASIC_128:
@@ -148,7 +148,7 @@ END_MENU_DRAWING:
                 ld      b, ZX128_MODE_TEXT - PENTAGON_MODE_TEXT
                 rst     8
 
-                IN A, (0)
+                LD A, (VAR_PORT_00)
                 PUSH AF
                 AND #04     ; Pentagon bit
                 CALL PRINT_ON_OFF
@@ -159,6 +159,7 @@ END_MENU_DRAWING:
                 rst     8
 
                 POP AF
+                XOR #FF
                 AND #10     ; ZX128 bit
                 CALL PRINT_ON_OFF
 
@@ -224,5 +225,18 @@ MEMTEST_INC_BANK:
 
                 ; copy KEY_SCAN proc from ROM
 KEY_SCAN:       INCBIN 'resources/48.rom', #028E, #02BE - #028E + 1
+
+ON_DRAW_MENU:
+
+                ld hl, VAR_PORT_00
+                ld a, (hl)
+                bit 7, a
+                jr nz, _go_draw_menu
+                ld (hl), #80 | #10
+_go_draw_menu:
+                XOR A
+                LD (VAR_PORT_00_ATTR), A
+                call    DRAW_MENU
+                JP PATCH_READ_KBD1
 
                 SAVEBIN 'quorum-menu-1024plus.rom', 0, 16384
