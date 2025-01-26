@@ -61,6 +61,7 @@ PRINT_MENU_VER:
 ; MEMTEST
                 ORG PATCH_MEMTEST1
                 ld      b, 0Eh      ; String for 1024 is 1 byte longer than for 256
+                jp      PREPARE_RAM_PAGE_NUMBERS
 
                 ORG PATCH_MEMTEST2
                 jp      nc, MEMTEST_INC_BANK    ; we need more complex logic to select the next RAM page
@@ -74,11 +75,11 @@ PRINT_MENU_VER:
                 dec     hl      ;             5
                 dec     hl      ;               pos
                 pop     af
+                PUSH AF
                 call    PRINT_HEX_NUMBER    ; Reuse existing HEX number print function
-                nop             ; wipe
-                nop             ; remaining
-                nop             ; code of old char 
-                nop             ; printing procedure
+                POP AF
+                JP TEST_PAGE_NUMBER
+                ASSERT $ == BEGIN_PATTERNS_TEST
 
                 ORG PATCH_MEMTEST4
                 cp      40h             ; 64 pages - for 1024 Kb
@@ -222,6 +223,54 @@ MEMTEST_INC_BANK:
                 POP DE
                 POP HL
                 jp TEST_RAM_PAGE
+
+PREPARE_RAM_PAGE_NUMBERS:
+                rst     8
+                
+                LD DE, RAM_BANK_EXRAM_BIT + 7
+                LD L, 64 ; pages count
+
+_loop_prepare_ram1:
+                LD A, L
+                OR A
+                JR Z, END_PREPARE_RAM_PAGE_NUMBERS
+
+                LD B, 8
+_loop_prepare_ram2:
+                DEC B
+                LD A, (DE)
+                OR B
+                INC B
+                PUSH BC
+                LD BC, #7ffd
+                OUT (C), A
+                POP BC
+                LD A, L
+                LD (#C000 + #1B00), A
+                DEC L
+                DJNZ _loop_prepare_ram2
+                DEC DE
+                JR _loop_prepare_ram1
+END_PREPARE_RAM_PAGE_NUMBERS:
+                ld      e, 0
+                JP ITERATE_OVER_RAM_PAGES
+
+                ; A - page number
+                ; HL - screen print position
+TEST_PAGE_NUMBER:
+                LD C, A
+                LD A, (#C000 + #1B00)
+                DEC A
+                CP C
+                LD A, C
+                JR Z, GOOD_PAGE
+                LD A, '!'
+                RST #10
+                JR END_TEST_PAGE_NUMBER
+GOOD_PAGE:
+                rst     18h             ; print space before 'OK'/error
+END_TEST_PAGE_NUMBER:
+                JP BEGIN_PATTERNS_TEST
 
                 ; copy KEY_SCAN proc from ROM
 KEY_SCAN:       INCBIN 'resources/48.rom', #028E, #02BE - #028E + 1

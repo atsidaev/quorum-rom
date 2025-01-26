@@ -182,7 +182,7 @@ loc_64B:                                ; CODE XREF: ROM:05FF↑j
                 jp      nz, loc_5A4
                 ld      hl, TEST_RAM_PROC_BODY
                 ld      de, TEST_RAM
-                ld      bc, 1Ah
+                ld      bc, TEST_RAM_PROC_BODY_END - TEST_RAM_PROC_BODY
                 ldir
                 ld      bc, 7FFDh
                 ld      hl, 0C000h
@@ -193,7 +193,7 @@ PATCH_MEMTEST1:
                 rst     8
                 ld      e, 0
 
-loc_670:                                ; CODE XREF: sub_605+DC↓j
+ITERATE_OVER_RAM_PAGES:
                 ld      a, e
                 cp      8
 PATCH_MEMTEST2:
@@ -232,6 +232,7 @@ PATCH_MEMTEST3:
 loc_6A3:                                ; CODE XREF: sub_605+9A↑j
                 rst     10h
                 rst     18h             ; print space before 'OK'/error
+BEGIN_PATTERNS_TEST:
                 ld      iy, MEMORY_TEST_PATTERNS
 
 loc_6A9:                                ; CODE XREF: sub_605+CE↓j
@@ -274,7 +275,7 @@ loc_6DB:
 PATCH_MEMTEST4:
                 cp      10h             ; 16 pages - for 256 Kb
                 ld      e, a
-                jr      nz, loc_670
+                jr      nz, ITERATE_OVER_RAM_PAGES
                 ld      a, (#5CFF)
                 xor     18h
                 ld      (#5CFF), a
@@ -322,6 +323,7 @@ loc_71C:                                ; CODE XREF: ROM:0713↑j
                 ld      a, 0
                 out     (PORT_00), a
                 ret
+TEST_RAM_PROC_BODY_END:
 ; ---------------------------------------------------------------------------
 aTestRomRamN:   DEFB 'Test ROM/RAM N ' ; DATA XREF: ROM:0584↑o
 aNoTrdos:       DEFB 'no TRDOS'       ; DATA XREF: ROM:05F9↑o

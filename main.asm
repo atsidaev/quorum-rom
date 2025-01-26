@@ -302,7 +302,7 @@ bad_crc_warn:                           ; CODE XREF: ROM:0160↓j
 crc_ok:
                 xor     a
                 out     (PORT_FE), a
-                ld      de, FAST_TEST_PATTERNS
+                ld      de, FAST_TEST_PATTERNS  ; two tests: 0xFF - bright white paper, 0x00 - black paper
 
 loc_168:                                ; CODE XREF: ROM:0187↓j
                 ld      a, (de)
