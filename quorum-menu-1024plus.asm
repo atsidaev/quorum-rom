@@ -1,7 +1,6 @@
 ; Patch file for original quorum-menu.rom
 
-VAR_PORT_00      EQU #4001
-VAR_PORT_00_ATTR EQU #5801
+VAR_PORT_00      EQU #5B02
 
                 DEVICE ZXSPECTRUM48
                 ORG 0
@@ -59,6 +58,9 @@ PRINT_MENU_VER:
                 DEFB 'ROM-MENU QUORUM V.5.0 19.01.2025'
 
 ; MEMTEST
+                ORG PATCH_MEMTEST0
+                CALL PATCH_TEST_RAM_PROC
+
                 ORG PATCH_MEMTEST1
                 ld      b, 0Eh      ; String for 1024 is 1 byte longer than for 256
                 jp      PREPARE_RAM_PAGE_NUMBERS
@@ -126,7 +128,7 @@ BEEP_AND_RUN_BOOT_DOS_AND_REDRAW:
                 LD HL, RUN_BOOT_DOS_AND_REDRAW
                 JR GO_TO_BEEP
 BEEP_AND_RUN_TEST_MEM:
-                LD HL, RUN_TEST_MEM
+                LD HL, PREPARE_RUN_TEST_MEM
 GO_TO_BEEP:
                 JP BEEP_AND_JP_HL
 
@@ -224,9 +226,32 @@ MEMTEST_INC_BANK:
                 POP HL
                 jp TEST_RAM_PAGE
 
+; -------------------
+PATCH_TEST_RAM_PROC:
+                ; FIX OUT (0) arguments in TEST_RAM
+                ; Fix OUT (0), 1 at the beginning
+                LD A, (VAR_PORT_00)
+                AND #7F
+                LD L, A
+                OR #01
+                LD DE, TEST_RAM + 1
+                LD (DE), A
+
+                ; Fix OUT (0), 0 at the end
+                LD A, L
+                LD DE, TEST_RAM + (TEST_RAM_PROC_BODY_END - TEST_RAM_PROC_BODY) - 4
+                LD (DE), A
+                
+                RET
+; -------------------
+
 PREPARE_RAM_PAGE_NUMBERS:
                 rst     8
                 
+                LD A, (VAR_PORT_00)
+                AND #7F
+                OUT (0), A
+
                 LD DE, RAM_BANK_EXRAM_BIT + 7
                 LD L, 64 ; pages count
 
@@ -275,6 +300,12 @@ END_TEST_PAGE_NUMBER:
                 ; copy KEY_SCAN proc from ROM
 KEY_SCAN:       INCBIN 'resources/48.rom', #028E, #02BE - #028E + 1
 
+PREPARE_RUN_TEST_MEM:
+                LD A, (VAR_PORT_00)
+                AND #7F
+                OUT (0), A
+                JP RUN_TEST_MEM
+
 ON_DRAW_MENU:
 
                 ld hl, VAR_PORT_00
@@ -283,8 +314,6 @@ ON_DRAW_MENU:
                 jr nz, _go_draw_menu
                 ld (hl), #80 | #10
 _go_draw_menu:
-                XOR A
-                LD (VAR_PORT_00_ATTR), A
                 call    DRAW_MENU
                 JP PATCH_READ_KBD1
 

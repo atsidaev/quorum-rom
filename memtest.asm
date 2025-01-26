@@ -1,4 +1,4 @@
-
+MEMTEST_BEGIN:
                 ld      a, 7
                 out     (0FEh), a
                 ld      (#5CFF), a
@@ -8,10 +8,12 @@
                 ld      de, TEST_ROM
                 ld      bc, TEST_ROM_PROC_BODY_END - TEST_ROM_PROC_BODY
                 ldir
+PATCH_ON_TEST_ROM_COPIED:
                 ld      hl, OUT_0_A_JP_3D2F_PROC_BODY ; PREPARE TR-DOS JUMPER IN RAM
                 ld      de, OUT_0_A_JP_3D2F
                 ld      bc, OUT_0_A_JP_3D2F_PROC_BODY_END - OUT_0_A_JP_3D2F_PROC_BODY
                 ldir
+END_PATCH_ON_TEST_ROM_COPIED:
 
 loc_54F:                                ; CODE XREF: sub_605+E8↓j
                 ld      sp, 6000h
@@ -92,7 +94,7 @@ loc_5A4:                                ; CODE XREF: sub_605+4C↓j
                 ld      hl, 0
                 ld      de, 0C000h
                 ld      bc, 4000h
-                ld      a, 0A0h         ; BASIC + TRDOS
+                ld      a, 0A0h         ; BASIC + TRDOS ; TODO fix
                 jp      OUT_0_A_JP_3D2F
 ; ---------------------------------------------------------------------------
                 ld      hl, 0C000h
@@ -129,7 +131,7 @@ loc_60B:                                ; CODE XREF: sub_605↑j
 
 loc_60D:                                ; CODE XREF: sub_605+4↑j
                 out     (c), a
-                ld      a, 20h ; ' '
+                ld      a, 20h ; TODO fix
 
 loc_611:                                ; CODE XREF: ROM:05C4↑j
                                         ; ROM:05F6↑j
@@ -184,6 +186,7 @@ loc_64B:                                ; CODE XREF: ROM:05FF↑j
                 ld      de, TEST_RAM
                 ld      bc, TEST_RAM_PROC_BODY_END - TEST_RAM_PROC_BODY
                 ldir
+PATCH_MEMTEST0:
                 ld      bc, 7FFDh
                 ld      hl, 0C000h
                 ld      hl, 40E0h
@@ -304,7 +307,7 @@ loc_6F0:                                ; CODE XREF: sub_605+C9↑j
 ; ---------------------------------------------------------------------------
 
 TEST_RAM_PROC_BODY:                     ; DATA XREF: sub_605+4F↑o
-                ld      a, 1
+                ld      a, 1            ; TODO fix
                 out     (PORT_00), a
 
 loc_70B:                                ; CODE XREF: ROM:0717↓j
@@ -320,7 +323,7 @@ loc_70B:                                ; CODE XREF: ROM:0717↓j
                 jr      nz, loc_70B
 
 loc_71C:                                ; CODE XREF: ROM:0713↑j
-                ld      a, 0
+                ld      a, 0            ; TODO fix
                 out     (PORT_00), a
                 ret
 TEST_RAM_PROC_BODY_END:
