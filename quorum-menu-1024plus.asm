@@ -89,6 +89,9 @@ PRINT_MENU_VER:
                 ORG aRam256Kbyte
                 DEFB 'RAM 1024 Kbyte'
 
+                ORG PATCH_RUN_BASIC_128
+                JP FIX_OUT_A_RUN_BASIC_128
+; --------------------------------------------------------------------------------
 ; Continious block at the end of the ROM where the majority of new logic is stored
 
                 ORG SYS_ROM_EMPTY_SPACE
@@ -316,5 +319,12 @@ ON_DRAW_MENU:
 _go_draw_menu:
                 call    DRAW_MENU
                 JP PATCH_READ_KBD1
+
+FIX_OUT_A_RUN_BASIC_128:
+                LD C, A
+                LD A, (VAR_PORT_00)
+                AND #7F
+                OR C
+                jp      #FFFD ; out (PORT_00), A8 + JP 00
 
                 SAVEBIN 'quorum-menu-1024plus.rom', 0, 16384

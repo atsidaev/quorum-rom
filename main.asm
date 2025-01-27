@@ -154,6 +154,7 @@ RUN_BASIC_128:                           ; CODE XREF: ROM:01FA↓j
                 ld      a, #A8  ; TODO fix
                 ld      hl, #D3
                 ld      (#FFFD), hl
+PATCH_RUN_BASIC_128:
                 jp      #FFFD ; out (PORT_00), A8 + JP 00
 ; ---------------------------------------------------------------------------
 
