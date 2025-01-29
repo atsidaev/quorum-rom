@@ -1,12 +1,16 @@
 ; Patch file for original quorum-menu.rom
-
-VAR_PORT_00      EQU #5B02
-
                 DEVICE ZXSPECTRUM48
                 ORG 0
                 INCBIN "quorum-menu.rom"
 
                 INCLUDE "quorum-menu.sym"
+
+                ORG PATCH_RUN_BASIC_48_MENU
+                jp FIX_OUT_0_AND_RUN_BASIC_48_MENU
+                ASSERT $ == END_PATCH_RUN_BASIC_48_MENU
+
+                ORG PATCH_NMI48
+                JP OUT_0_FROM_NMI48
 
                 ORG PATCH_DRAW_MENU1
                 JP ON_DRAW_MENU
@@ -110,15 +114,15 @@ ON_KEYPRESS_NEW:
                 JR Z, TOGGLE_128K
                 JP READ_MENU_KEYBORD_NEW
 TOGGLE_PENT
-                LD A, (VAR_PORT_00)
+                IN A, (0)
                 XOR #4
-                LD (VAR_PORT_00), A
+                OUT (0), A
                 JR CLICK_AND_RUN_BOOT_DOS_AND_REDRAW
 
 TOGGLE_128K:
-                LD A, (VAR_PORT_00)
+                IN A, (0)
                 XOR #10
-                LD (VAR_PORT_00), A
+                OUT (0), A
                 JR CLICK_AND_RUN_BOOT_DOS_AND_REDRAW
 
 BEEP_AND_RUN_BASIC_128:
@@ -131,7 +135,7 @@ BEEP_AND_RUN_BOOT_DOS_AND_REDRAW:
                 LD HL, RUN_BOOT_DOS_AND_REDRAW
                 JR GO_TO_BEEP
 BEEP_AND_RUN_TEST_MEM:
-                LD HL, PREPARE_RUN_TEST_MEM
+                LD HL, RUN_TEST_MEM
 GO_TO_BEEP:
                 JP BEEP_AND_JP_HL
 
@@ -154,7 +158,7 @@ END_MENU_DRAWING:
                 ld      b, ZX128_MODE_TEXT - PENTAGON_MODE_TEXT
                 rst     8
 
-                LD A, (VAR_PORT_00)
+                IN A, (0)
                 PUSH AF
                 AND #04     ; Pentagon bit
                 CALL PRINT_ON_OFF
@@ -233,8 +237,8 @@ MEMTEST_INC_BANK:
 PATCH_TEST_RAM_PROC:
                 ; FIX OUT (0) arguments in TEST_RAM
                 ; Fix OUT (0), 1 at the beginning
-                LD A, (VAR_PORT_00)
-                AND #7F
+                IN A, (0)
+                AND #14 ; D2=QUORUM/PENT | D4=128/1024
                 LD L, A
                 OR #01
                 LD DE, TEST_RAM + 1
@@ -251,10 +255,6 @@ PATCH_TEST_RAM_PROC:
 PREPARE_RAM_PAGE_NUMBERS:
                 rst     8
                 
-                LD A, (VAR_PORT_00)
-                AND #7F
-                OUT (0), A
-
                 LD DE, RAM_BANK_EXRAM_BIT + 7
                 LD L, 64 ; pages count
 
@@ -303,28 +303,80 @@ END_TEST_PAGE_NUMBER:
                 ; copy KEY_SCAN proc from ROM
 KEY_SCAN:       INCBIN 'resources/48.rom', #028E, #02BE - #028E + 1
 
-PREPARE_RUN_TEST_MEM:
-                LD A, (VAR_PORT_00)
-                AND #7F
-                OUT (0), A
-                JP RUN_TEST_MEM
-
+; remove?
 ON_DRAW_MENU:
-
-                ld hl, VAR_PORT_00
-                ld a, (hl)
-                bit 7, a
-                jr nz, _go_draw_menu
-                ld (hl), #80 | #10
-_go_draw_menu:
                 call    DRAW_MENU
                 JP PATCH_READ_KBD1
 
 FIX_OUT_A_RUN_BASIC_128:
                 LD C, A
-                LD A, (VAR_PORT_00)
-                AND #7F
+                IN A, (0)
+                AND #14
                 OR C
                 jp      #FFFD ; out (PORT_00), A8 + JP 00
+
+; MENU-48 PATCH
+LD_A_POS        DW #C029, #C092, #C0CC, #CC1F, #CC2F, #CC37, #CC5E, #CCA4, #CCEE, #D0AD, #D0D6
+XOR_A_POS       DW #CC50, #CC8F, #CCB4, #CCD3, #CCE5
+FIX_OUT_0_AND_RUN_BASIC_48_MENU:
+                ldir
+
+PROC_OUT_0_FIX_TARGET EQU #C028 - (END_PROC_OUT_0_FIX - PROC_OUT_0_FIX)
+
+                LD HL, PROC_OUT_0_FIX
+                LD DE, PROC_OUT_0_FIX_TARGET
+                LD BC, END_PROC_OUT_0_FIX - PROC_OUT_0_FIX
+                LDIR
+
+                ; Fix A value at PROC_OUT_0_FIX
+                LD HL, PROC_OUT_0_FIX_TARGET + 1
+                IN A, (0)
+                AND #14
+                LD (HL), A
+
+                LD HL, LD_A_POS
+                LD C, A
+                LD B, 11
+fix_ld_a_loop:
+                LD E, (HL)
+                INC HL
+                LD D, (HL)
+                INC HL
+                INC E
+                LD A, (DE)
+                OR C
+                LD (DE), A
+
+                DJNZ fix_ld_a_loop
+
+                LD HL, XOR_A_POS
+                LD B, 5
+fix_xor_a_loop:
+                LD E, (HL)
+                INC HL
+                LD D, (HL)
+                INC HL
+                LD A, #CD
+                LD (DE), A
+                INC DE
+                LD A, PROC_OUT_0_FIX_TARGET % 256
+                LD (DE), A
+                INC DE
+                LD A, PROC_OUT_0_FIX_TARGET / 256
+                LD (DE), A
+                DJNZ fix_xor_a_loop
+                ret
+
+PROC_OUT_0_FIX:
+                ld a, 0
+                out (0), a
+                ret
+END_PROC_OUT_0_FIX:
+
+OUT_0_FROM_NMI48:
+                IN A, (0)
+                AND #14
+                OUT (0), A
+                JP RETURN_FROM_PATCH_NMI48
 
                 SAVEBIN 'quorum-menu-1024plus.rom', 0, 16384

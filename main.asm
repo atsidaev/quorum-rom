@@ -151,7 +151,7 @@ RUN_BASIC_128:                           ; CODE XREF: ROM:01FA↓j
                 ld      bc, PORT_7FFD
                 out     (c), a
                 ld      (#FFFF), a
-                ld      a, #A8  ; TODO fix
+                ld      a, #A8
                 ld      hl, #D3
                 ld      (#FFFD), hl
 PATCH_RUN_BASIC_128:
@@ -439,8 +439,10 @@ loc_219:                                ; CODE XREF: ROM:012B↑j
                 ld      de, 0C028h      ; basic menu entry point
                 push    de
                 ld      bc, 10C0h
+PATCH_RUN_BASIC_48_MENU:
                 ldir
                 ret
+END_PATCH_RUN_BASIC_48_MENU:
 
 ; =============== S U B R O U T I N E =======================================
 
@@ -497,8 +499,10 @@ loc_2EE:                                ; CODE XREF: ROM:02F1↓j
                 ld      bc, PORT_7FFD
                 ld      a, 10h
                 out     (c), a
-                xor     a   ; TODO fix
+PATCH_NMI48:
+                xor     a
                 out     (PORT_00), a
+RETURN_FROM_PATCH_NMI48:
                 ld      hl, 0C000h
                 ld      e, (hl)
                 dec     a
@@ -659,7 +663,7 @@ SWITCH_TO_BASIC48:                                ; CODE XREF: PATCH_ROM+24↑j
                 bit     7, a
                 jr      nz, loc_3EB
                 bit     0, a
-                ld      a, 60h ; '`'
+                ld      a, 60h ; TODO fix
                 jr      loc_3EF
 ; ---------------------------------------------------------------------------
 
