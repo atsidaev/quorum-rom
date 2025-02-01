@@ -164,7 +164,7 @@ FAST_RESET_48:
                 out     (c), a
                 ld      hl, 0
                 push    hl
-                ld      a, 0E0h ; TODO fix
+                ld      a, 0E0h ; TODO fix (or not? fast reset should be fast)
                 push    af
                 jr      OUT_0_A_POP_AF_RET
 ; ---------------------------------------------------------------------------
@@ -373,7 +373,6 @@ RUN_BOOT_DOS_AND_REDRAW:
                 ld      bc, SCREEN_ATTRIBUTES_LENGTH - 1
                 ld      (hl), 7
                 ldir
-PATCH_DRAW_MENU1:
                 call    DRAW_MENU
 
 PATCH_READ_KBD1:
