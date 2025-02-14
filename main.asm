@@ -215,7 +215,7 @@ loc_D4:                                 ; CODE XREF: ROM:loc_CC↑j
                 out     (c), a
                 ld      a, e
                 ld      (#F000), a
-                ld      a, 9    ; TODO fix?
+                ld      a, 9    ; fixed!
                 jr      loc_10D
 ; ---------------------------------------------------------------------------
 
@@ -234,11 +234,12 @@ loc_F3:
                 out     (c), a
                 ld      a, e
                 ld      (#F000), a
-                ld      a, 1    ; TODO fix?
+                ld      a, 1    ; fixed!
 
 loc_10D:                                ; CODE XREF: ROM:00F0↑j
                 pop     hl
                 pop     de
+PATCH_OUT0_1:
                 jp      OUT_0_A_SWITCH_TO_BASIC_ROM
 ; ---------------------------------------------------------------------------
 
@@ -531,16 +532,20 @@ loc_326:                                ; CODE XREF: ROM:0315↑j
                 ld      bc, 15h
                 ldir
                 jp      #C003
-; ---------------------------------------------------------------------------
-                ld      a, 20h ; TODO fix
+; How do we even get here?
+PATCH_OUT0_2:
+                ld      a, 20h ; fixed!
                 out     (PORT_00), a
+PATCH_OUT0_2_END:
                 ld      hl, 28h ; '('
                 ld      de, 0C028h
                 ld      bc, 3FD8h
                 ldir
-                xor     a   ; TODO fix
+PATCH_OUT0_3:
+                xor     a   ; fixed!
                 out     (PORT_00), a
-                jp      loc_34B
+                jp      loc_34B   ; but why? PC is at 034B already
+PATCH_OUT0_3_END:
 ; ---------------------------------------------------------------------------
 
 loc_34B:                                ; CODE XREF: ROM:0348↑j
@@ -658,22 +663,23 @@ loc_3C7:                                ; CODE XREF: PATCH_ROM+32↑j
                 out     (PORT_FE), a
 
 SWITCH_TO_BASIC48:                                ; CODE XREF: PATCH_ROM+24↑j
+PATCH_OUT0_4:
                 ld      a, (SCREEN_4000)
                 bit     7, a
                 jr      nz, loc_3EB
                 bit     0, a
-                ld      a, 60h ; TODO fix
+                ld      a, 60h ; fixed!
                 jr      loc_3EF
 ; ---------------------------------------------------------------------------
 
 loc_3EB:                                ; CODE XREF: PATCH_ROM+53↑j
                 bit     0, a   ; from NMI or not?
-                ld      a, 41h ; TODO fix
+                ld      a, 41h ; fixed!
 
-loc_3EF:                                ; CODE XREF: PATCH_ROM+59↑j
+loc_3EF:
                 jp      nz, OUT_0_A_POP_AF_RET
                 jp      OUT_0_RET
-; End of function PATCH_ROM
+PATCH_OUT0_4_END:
 
 ; ---------------------------------------------------------------------------
 
@@ -878,7 +884,8 @@ START_TRDOS:
                 ld      bc, OUT_0_A_JP_3D2F_PROC_BODY_END - OUT_0_A_JP_3D2F_PROC_BODY
                 ldir
                 push    bc
-                ld      a, 0E0h ; TODO fix
+                ld      a, 0E0h ; fixed!
+PATCH_OUT0_5:
                 jp      OUT_0_A_JP_3D2F
 ; ---------------------------------------------------------------------------
 

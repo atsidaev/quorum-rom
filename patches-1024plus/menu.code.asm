@@ -105,4 +105,4 @@ RUN_PENT_128:                           ; CODE XREF: ROM:01FA↓j
                 jp      #FFFD ; out (PORT_00), A8 + JP 00
 
                 ; copy KEY_SCAN proc from ROM
-KEY_SCAN:       INCBIN 'resources/48.rom', #028E, #02BE - #028E + 1
+KEY_SCAN:       INCBIN 'generated/48.rom', #028E, #02BE - #028E + 1
