@@ -15,6 +15,48 @@
 
         ORG 0000
 
+        IFDEF TURBO
+CONST1  EQU #51
+CONST2  EQU #15
+CONST3  EQU #1b
+CONST4  EQU #1a
+CONST5  EQU #21
+CONST6  EQU #1d
+CONST7  EQU #10
+CONST8  EQU #1a
+CONST9  EQU #101
+CONST10 EQU #ce
+CONST11 EQU #e3
+CONST12 EQU #e4
+CONST13 EQU #ec
+CONST14 EQU #d8
+CONST15 EQU #d9
+CONST16 EQU #e5
+CONST17 EQU #d7
+CONST18 EQU #06
+        DEFINE FILENAME "48_turbo.rom"
+        ELSE
+CONST1  EQU $A4
+CONST2  EQU $2F
+CONST3  EQU $37
+CONST4  EQU $3B
+CONST5  EQU $42
+CONST6  EQU $3E
+CONST7  EQU $31
+CONST8  EQU $3B
+CONST9  EQU $0415
+CONST10 EQU $9C
+CONST11 EQU $C6
+CONST12 EQU $C9
+CONST13 EQU $D4
+CONST14 EQU $B0
+CONST15 EQU $B2
+CONST16 EQU $CB
+CONST17 EQU $B0
+CONST18 EQU $16
+        DEFINE FILENAME "48.rom"
+        ENDIF
+
 ;*****************************************
 ;** Part 1. RESTART ROUTINES AND TABLES **
 ;*****************************************
@@ -1539,7 +1581,7 @@ L04D8:  DJNZ    L04D8           ; self loop to SA-LEADER for delay.
 
         XOR     $0F             ; switch from RED (mic on) to CYAN (mic off).
 
-        LD      B,$A4           ; hold count. also timed instruction.
+        LD      B, CONST1       ; hold count. also timed instruction.
 
         DEC     L               ; originally $80 or $98.
                                 ; but subsequently cycles 256 times.
@@ -1555,20 +1597,20 @@ L04D8:  DJNZ    L04D8           ; self loop to SA-LEADER for delay.
 ;   for mic on.
 ;   A sync pulse is much shorter than the steady pulses of the lead-in.
 
-        LD      B,$2F           ; another short timed delay.
+        LD      B, CONST2       ; another short timed delay.
 
 ;; SA-SYNC-1
 L04EA:  DJNZ    L04EA           ; self loop to SA-SYNC-1
 
         OUT     ($FE),A         ; switch to mic on and red.
         LD      A,$0D           ; prepare mic off - cyan
-        LD      B,$37           ; another short timed delay.
+        LD      B, CONST3       ; another short timed delay.
 
 ;; SA-SYNC-2
 L04F2:  DJNZ    L04F2           ; self loop to SA-SYNC-2
 
         OUT     ($FE),A         ; output mic off, cyan border.
-        LD      BC,$3B0E        ; B=$3B time(*), C=$0E, YELLOW, MIC OFF.
+        LD      BC, CONST4 * #100 + #0E ; B=$3B time(*), C=$0E, YELLOW, MIC OFF.
 
 ; 
 
@@ -1635,7 +1677,7 @@ L0514:  DJNZ    L0514           ; self loop for delay to SA-BIT-1
 
 ;   but if bit is 1 then the mic state is held for longer.
 
-        LD      B,$42           ; set timed delay. (66 decimal)
+        LD      B, CONST5       ; set timed delay. (66 decimal)
 
 ;; SA-SET
 L051A:  DJNZ    L051A           ; self loop to SA-SET 
@@ -1644,7 +1686,7 @@ L051A:  DJNZ    L051A           ; self loop to SA-SET
 ;; SA-OUT
 L051C:  OUT     ($FE),A         ; blue and mic on OR  yellow and mic off.
 
-        LD      B,$3E           ; set up delay
+        LD      B, CONST6       ; set up delay
         JR      NZ,L0511        ; back to SA-BIT-2 if zero reset NZ (first pass)
 
 ;   proceed when the blue and yellow bands have been output.
@@ -1665,7 +1707,7 @@ L0525:  RL      L               ; rotate left through carry
 
         DEC     DE              ; decrease length
         INC     IX              ; increase byte pointer
-        LD      B,$31           ; set up timing.
+        LD      B, CONST7       ; set up timing.
 
         LD      A,$7F           ; test the space key and
         IN      A,($FE)         ; return to common exit (to restore border)
@@ -1678,7 +1720,7 @@ L0525:  RL      L               ; rotate left through carry
         INC     A               ; increment.
         JP      NZ,L04FE        ; JUMP to SA-LOOP if more bytes.
 
-        LD      B,$3B           ; a final delay. 
+        LD      B, CONST8       ; a final delay. 
 
 ;; SA-DELAY
 L053C:  DJNZ    L053C           ; self loop to SA-DELAY
@@ -1766,7 +1808,7 @@ L056C:  CALL    L05E7           ; routine LD-EDGE-1
 
 ;   but continue when a transition is found on tape.
 
-        LD      HL,$0415        ; set up 16-bit outer loop counter for 
+        LD      HL, CONST9      ; set up 16-bit outer loop counter for 
                                 ; approx 1 second delay.
 
 ;; LD-WAIT
@@ -1785,11 +1827,11 @@ L0574:  DJNZ    L0574           ; self loop to LD-WAIT (for 256 times)
                                 ; if no edges at all.
 
 ;; LD-LEADER
-L0580:  LD      B,$9C           ; set timing value.
+L0580:  LD      B, CONST10      ; set timing value.
         CALL    L05E3           ; routine LD-EDGE-2
         JR      NC,L056B        ; back to LD-BREAK if time-out
 
-        LD      A,$C6           ; two edges must be spaced apart.
+        LD      A, CONST11      ; two edges must be spaced apart.
         CP      B               ; compare
         JR      NC,L056C        ; back to LD-START if too close together for a 
                                 ; lead-in.
@@ -1801,12 +1843,12 @@ L0580:  LD      B,$9C           ; set timing value.
 ;   Now test every edge looking for the terminal sync signal.
 
 ;; LD-SYNC
-L058F:  LD      B,$C9           ; initial timing value in B.
+L058F:  LD      B, CONST12      ; initial timing value in B.
         CALL    L05E7           ; routine LD-EDGE-1
         JR      NC,L056B        ; back to LD-BREAK with time-out.
 
         LD      A,B             ; fetch augmented timing value from B.
-        CP      $D4             ; compare 
+        CP      CONST13         ; compare 
         JR      NC,L058F        ; back to LD-SYNC if gap too big, that is,
                                 ; a normal lead-in edge gap.
 
@@ -1825,7 +1867,7 @@ L058F:  LD      B,$C9           ; initial timing value in B.
         LD      C,A             ; store the new long-term byte.
 
         LD      H,$00           ; set up parity byte as zero.
-        LD      B,$B0           ; timing.
+        LD      B, CONST14      ; timing.
         JR      L05C8           ; forward to LD-MARKER 
                                 ; the loop mid entry point with the alternate 
                                 ; zero flag reset to indicate first byte 
@@ -1877,7 +1919,7 @@ L05C2:  INC     IX              ; increment byte pointer.
 ;; LD-DEC
 L05C4:  DEC     DE              ; decrement length.
         EX      AF,AF'          ; store the flags.
-        LD      B,$B2           ; timing.
+        LD      B, CONST15      ; timing.
 
 ;   when starting to read 8 bits the receiving byte is marked with bit at right.
 ;   when this is rotated out again then 8 bits have been read.
@@ -1890,14 +1932,14 @@ L05CA:  CALL    L05E3           ; routine LD-EDGE-2 increments B relative to
                                 ; gap between 2 edges.
         RET     NC              ; return with time-out.
 
-        LD      A,$CB           ; the comparison byte.
+        LD      A, CONST16      ; the comparison byte.
         CP      B               ; compare to incremented value of B.
                                 ; if B is higher then bit on tape was set.
                                 ; if <= then bit on tape is reset. 
 
         RL      L               ; rotate the carry bit into L.
 
-        LD      B,$B0           ; reset the B timer byte.
+        LD      B, CONST17      ; reset the B timer byte.
         JP      NC,L05CA        ; JUMP back to LD-8-BITS
 
 ;   when carry set then marker bit has been passed out and byte is complete.
@@ -1944,7 +1986,7 @@ L05E3:  CALL    L05E7           ; call routine LD-EDGE-1 below.
 ;   when detecting a read-in signal on the tape.
 
 ;; LD-EDGE-1
-L05E7:  LD      A,$16           ; a delay value of twenty two.
+L05E7:  LD      A, CONST18      ; a delay value of twenty two.
 
 ;; LD-DELAY
 L05E9:  DEC     A               ; decrement counter
@@ -19271,4 +19313,4 @@ L386E:  DEFB    $FF, $FF        ;
 ;   Brennan calls numerous routines in this ROM.  
 ;   Non-standard entry points have a label beginning with X. 
 
-        SAVEBIN "48.rom", 0, 16384
+        SAVEBIN FILENAME, 0, 16384
