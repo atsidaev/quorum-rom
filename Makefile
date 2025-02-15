@@ -6,6 +6,9 @@ roms: quorum-menu.rom quorum-menu-1024plus.rom quorum.rom quorum-1024plus.rom
 clean:
 	rm quorum*.rom *.sym  generated/*.bin || true
 
+quorum48.rom: quorum48.asm generated/48.rom generated/font_quorum.bin
+	sjasmplus $<
+
 generated/48.rom: sinclair48rom/spectrum48.asm generated/font_zx.bin
 	sjasmplus --sym=$(@:.rom=.sym) $<
 	mv 48.rom generated/
@@ -14,7 +17,7 @@ generated/48_turbo.rom: sinclair48rom/spectrum48.asm generated/font_zx.bin
 	sjasmplus -DTURBO $<
 	mv 48_turbo.rom generated/
 
-generated/q48_vs_orig48_patch.bin: resources/quorum48.rom generated/48.rom
+generated/q48_vs_orig48_patch.bin: quorum48.rom generated/48.rom
 	python3 scripts/patch48_gen.py --seq --ignore=0013-0017,0330-0332,3800-4000 --force=005F,16 $^ $@
 
 generated/48_turbo_vs_48_patch.bin: generated/48.rom generated/48_turbo.rom
@@ -37,10 +40,10 @@ quorum-menu-1024plus.rom: quorum-menu-1024plus.asm quorum-menu.rom
 	sjasmplus --sym=$(@:.rom=.sym) $<
 	python3 scripts/fix_crc.py $@ quorum-menu.sym ROM_CRC_VALUE
 
-quorum.rom: link.asm quorum-menu-1024plus.rom resources/quorum48.rom resources/128.rom resources/trdos.rom
+quorum.rom: link.asm quorum-menu-1024plus.rom quorum48.rom resources/128.rom resources/trdos.rom
 	sjasmplus $< -DINPUT="quorum-menu.rom" -DOUTPUT=\"$@\"
 
-quorum-1024plus.rom: link.asm quorum-menu-1024plus.rom resources/quorum48.rom resources/128.rom resources/trdos.rom
+quorum-1024plus.rom: link.asm quorum-menu-1024plus.rom quorum48.rom resources/128.rom resources/trdos.rom
 	sjasmplus $< -DINPUT="quorum-menu-1024plus.rom" -DOUTPUT=\"$@\"
 
 prepare_worker:
