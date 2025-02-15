@@ -1,0 +1,1 @@
+Undisassembled (yet) blobs, which are independent parts of ROM
