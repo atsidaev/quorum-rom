@@ -263,7 +263,7 @@ loc_39C9:
 loc_39DF:
         ld      d, h
         ld      e, l
-        ld      bc, 19h
+        ld      bc, CHECK_AND_GO_TO_SHADOW_RAM_END - CHECK_AND_GO_TO_SHADOW_RAM
         ldir
 CHECK_AND_GO_TO_SHADOW_RAM:
         ld      a, 1
@@ -276,11 +276,11 @@ CHECK_AND_GO_TO_SHADOW_RAM:
         jr      nz, loc_39F8
         pop     af
         jp      #0066 ; NMI handler
-
 loc_39F8:
         ld      a, 60h ; '`'
         out     (0), a
         jp      0
+CHECK_AND_GO_TO_SHADOW_RAM_END:
 
         db 0FFh
         db 0FFh

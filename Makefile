@@ -7,7 +7,10 @@ clean:
 	rm quorum*.rom *.sym  generated/*.bin || true
 
 quorum48.rom: quorum48.asm generated/48.rom generated/font_quorum.bin
-	sjasmplus $<
+	sjasmplus --sym=$(@:.rom=.sym) $<
+
+quorum48-1024plus.rom: quorum48-1024plus.asm quorum48.rom
+	sjasmplus --sym=$(@:.rom=.sym) $<
 
 generated/48.rom: sinclair48rom/spectrum48.asm generated/font_zx.bin
 	sjasmplus --sym=$(@:.rom=.sym) $<
@@ -40,11 +43,13 @@ quorum-menu-1024plus.rom: quorum-menu-1024plus.asm quorum-menu.rom
 	sjasmplus --sym=$(@:.rom=.sym) $<
 	python3 scripts/fix_crc.py $@ quorum-menu.sym ROM_CRC_VALUE
 
-quorum.rom: link.asm quorum-menu-1024plus.rom quorum48.rom resources/128.rom resources/trdos.rom
-	sjasmplus $< -DINPUT="quorum-menu.rom" -DOUTPUT=\"$@\"
+quorum.rom: quorum-menu.rom resources/trdos.rom resources/128.rom quorum48.rom
+	[ -f $@ ] && rm $@ || true
+	cat $^ >> $@
 
-quorum-1024plus.rom: link.asm quorum-menu-1024plus.rom quorum48.rom resources/128.rom resources/trdos.rom
-	sjasmplus $< -DINPUT="quorum-menu-1024plus.rom" -DOUTPUT=\"$@\"
+quorum-1024plus.rom: quorum-menu-1024plus.rom resources/trdos.rom resources/128.rom quorum48-1024plus.rom
+	[ -f $@ ] && rm $@ || true
+	cat $^ >> $@
 
 prepare_worker:
 	sudo apt-get -y update

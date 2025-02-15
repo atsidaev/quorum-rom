@@ -45,11 +45,11 @@ _NMI2:
         push    bc
         push    de
         push    hl
-        jr      _NMI_CONT
+        jr      NMI_CONT
 
         ORG #0066 ; NMI handler
         jr      _NMI2
-_NMI_CONT:
+NMI_CONT:
         ld      hl, CHECK_AND_GO_TO_SHADOW_RAM
         jp      loc_39DF
 
