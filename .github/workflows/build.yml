@@ -10,3 +10,9 @@ jobs:
         run: make prepare_worker
       - name: Build project 
         run: make
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: quorum-1024plus-rom
+          path: quorum-1024plus.rom
+      
